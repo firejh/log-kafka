@@ -1,0 +1,14 @@
+core:
+  worker_num: 2
+  queue_num: 8192
+  fail_fast_timeout: 3 # 当程序收到signal时候，要保证在fail_fast_timeout(unit: second)时间段内退出
+  udp_port: 2000
+  pid:
+    enabled: false
+    path: "logkafka.pid"
+    override: true
+
+kafka:
+  # 多个broker之间逗号分隔
+  brokers: "127.0.0.1:9092"
+  topic: "telemetry"
