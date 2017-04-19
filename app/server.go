@@ -9,7 +9,7 @@ import (
 
 const (
 	MaxMsgLen    = 32 * 1024
-	ReadDeadline = 1e9
+	ReadDeadline = 5e9
 )
 
 var (
@@ -51,8 +51,10 @@ func NewUdpServer() *UdpServer {
 
 func (u *UdpServer) start() {
 	var (
-		buf      []byte
 		err      error
+		ok       bool
+		nerr     net.Error
+		buf      []byte
 		length   int
 		seq      int
 		peerAddr net.Addr
@@ -68,6 +70,9 @@ func (u *UdpServer) start() {
 		buf = make([]byte, MaxMsgLen)
 		u.conn.SetReadDeadline(time.Now().Add(ReadDeadline))
 		length, peerAddr, err = u.conn.ReadFromUDP(buf)
+		if nerr, ok = err.(net.Error); ok && nerr.Timeout() {
+			continue
+		}
 		if length == 0 || err != nil {
 			Log.Warn("conn.ReadFromUDP() = {peer:%#v error:%#v}", peerAddr, err)
 			continue

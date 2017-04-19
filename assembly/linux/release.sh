@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ******************************************************
-# DESC    : build script for test env
+# DESC    : build script for release env
 # AUTHOR  : Alex Stocks
 # VERSION : 1.0
 # LICENCE : Apache License 2.0
@@ -12,10 +12,10 @@
 
 set -e
 
-export GOOS=darwin
+export GOOS=linux
 export GOARCH=amd64
 
-export PROFILE="test"
+export PROFILE="release"
 export PROJECT_HOME=`pwd`
 
 if [ -f "${PROJECT_HOME}/assembly/common/app.properties" ]; then

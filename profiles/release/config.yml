@@ -1,6 +1,6 @@
 core:
-  mode: "test"
-  worker_num: 2
+  mode: "release"
+  worker_num: 1024
   queue_num: 8192
   fail_fast_timeout: 3 # 当程序收到signal时候，要保证在fail_fast_timeout(unit: second)时间段内退出
   udp_port: 2000

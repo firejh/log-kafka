@@ -37,7 +37,6 @@ var (
 Usage: log-kafka [options]
 Server Options:
     -c, --config <file>              Configuration file path
-    -k, --kafka_log <file>           Kafka Log configuration file
     -l, --log <file>                 Log configuration file
 Common Options:
     -h, --help                       Show this message
@@ -143,11 +142,10 @@ func initSignal() {
 
 func main() {
 	var (
-		err          error
-		showVersion  bool
-		configFile   string
-		logConf      string
-		kafkaLogConf string
+		err         error
+		showVersion bool
+		configFile  string
+		logConf     string
 	)
 
 	/////////////////////////////////////////////////
@@ -162,8 +160,6 @@ func main() {
 	flag.StringVar(&configFile, "config", "", "Configuration file path.")
 	flag.StringVar(&logConf, "l", "", "Logger configuration file.")
 	flag.StringVar(&logConf, "log", "", "Logger configuration file.")
-	flag.StringVar(&kafkaLogConf, "k", "", "Kafka logger configuration file.")
-	flag.StringVar(&kafkaLogConf, "kafka_log", "", "Kafka logger configuration file.")
 
 	flag.Usage = usage
 	flag.Parse()
@@ -177,7 +173,7 @@ func main() {
 	if configFile == "" {
 		configFile = os.Getenv(APP_CONF_FILE)
 		if configFile == "" {
-			usage()
+			panic("can not get configFile!")
 		}
 	}
 	if path.Ext(configFile) != ".yml" {
@@ -192,15 +188,8 @@ func main() {
 
 	if logConf == "" {
 		logConf = os.Getenv(APP_LOG_CONF_FILE)
-		if configFile == "" {
-			usage()
-		}
-	}
-
-	if kafkaLogConf == "" {
-		kafkaLogConf = os.Getenv(APP_KAFKA_LOG_CONF_FILE)
-		if kafkaLogConf == "" {
-			usage()
+		if logConf == "" {
+			panic("can not get logConf!")
 		}
 	}
 

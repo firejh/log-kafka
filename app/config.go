@@ -23,6 +23,7 @@ type SectionPID struct {
 
 // SectionCore is sub section of config.
 type SectionCore struct {
+	Mode            string     `yaml:"mode"`
 	FailFastTimeout int        `yaml:"fail_fast_timeout"`
 	WorkerNum       int64      `yaml:"worker_num"`
 	QueueNum        int64      `yaml:"queue_num"`

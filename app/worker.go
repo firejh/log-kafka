@@ -15,7 +15,7 @@ import (
 )
 
 /////////////////////////////////////////////////
-// pusher-worker
+// worker
 /////////////////////////////////////////////////
 
 type (
@@ -33,6 +33,7 @@ type (
 
 	MessageMetadata struct {
 		EnqueuedAt time.Time
+		Key        string
 	}
 )
 
@@ -79,13 +80,16 @@ func (w *KafkaWorker) startKafkaWorker() {
 	Log.Info("worker{%d-%d} starts to work now.", index, id)
 
 	msgCallback = func(message *sarama.ProducerMessage) {
-		Log.Debug("send msg{%v, %v}, success num:%d, response{topic:%s, partition:%d, offset:%d}\n",
-			message.Key, message.Value, successes, message.Topic, message.Partition, message.Offset)
+		if Conf.Core.Mode != "release" {
+			var meta = message.Metadata.(MessageMetadata)
+			Log.Info("send msg{%v}, latency:%v, success num:%d, response{topic:%s, partition:%d, offset:%d}\n",
+				meta.Key, meta.Latency(), successes, message.Topic, message.Partition, message.Offset)
+		}
 		successes++
 	}
 
 	errCallback = func(err *sarama.ProducerError) {
-		Log.Info("send msg:%v failed, fail num:%d. error:%v\n", err.Msg, failures, err.Error())
+		Log.Warn("send msg:%v failed, fail num:%d. error:%v\n", err.Msg, failures, err.Error())
 		failures++
 	}
 
@@ -108,7 +112,7 @@ LOOP:
 		select {
 		case message = <-w.Q:
 			Log.Debug("dequeue{worker{%d-%d} , message{key:%q, value:%q}}}", index, id, string(message.key), string(message.value))
-			producer.SendBytes(Conf.Kafka.Topic, message.key, message.value, MessageMetadata{EnqueuedAt: Now})
+			producer.SendBytes(Conf.Kafka.Topic, message.key, message.value, MessageMetadata{EnqueuedAt: Now, Key: string(message.key)})
 
 		case <-w.done:
 			producer.Stop()
@@ -126,7 +130,7 @@ func (w *KafkaWorker) Stop() {
 
 // queueNotification add kafka message to queue list.
 func (w *KafkaWorker) enqueueKafkaMessage(message Message) {
-	Log.Debug("enqueue{message:%#v}", message)
+	Log.Debug("enqueue{message{key:%q, value:%q}}", string(message.key), string(message.value))
 	w.Q <- message
 }
 
