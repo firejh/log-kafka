@@ -1,9 +1,11 @@
 core:
   mode: "release"
   worker_num: 256
-  queue_num: 8192
+  queue_num: 512
   fail_fast_timeout: 3 # 当程序收到signal时候，要保证在fail_fast_timeout(unit: second)时间段内退出
   udp_port: 2000
+  udp_read_buffer_size: 8388608
+  udp_read_timeout: 3
   log_size: 4096
   pid:
     enabled: false

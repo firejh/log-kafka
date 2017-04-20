@@ -29,6 +29,8 @@ type SectionCore struct {
 	QueueNum        int64      `yaml:"queue_num"`
 	PID             SectionPID `yaml:"pid"`
 	UDPPort         int        `yaml:"udp_port"`
+	UDPReadBufSize  int        `yaml:"udp_read_buffer_size"`
+	UDPReadTimeout  int        `yaml:"udp_read_timeout"`
 	LogSize         int        `yaml:"log_size"`
 }
 

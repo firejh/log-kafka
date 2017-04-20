@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+import (
+	"github.com/AlexStocks/goext/time"
+)
+
 const (
 	ReadDeadline = 5e9
 )
@@ -41,6 +45,7 @@ func NewUdpServer() *UdpServer {
 	if server.conn, err = net.ListenUDP(protocol, udpAddr); err != nil {
 		panic(fmt.Sprintf("net.ListenUDP(protocol:%s, udpAddr:%#v) = error:%#v", protocol, udpAddr, err))
 	}
+	server.conn.SetReadBuffer(Conf.Core.UDPReadBufSize)
 
 	server.wg.Add(1)
 	go server.start()
@@ -67,7 +72,7 @@ func (u *UdpServer) start() {
 			break
 		}
 		buf = make([]byte, Conf.Core.LogSize)
-		u.conn.SetReadDeadline(time.Now().Add(ReadDeadline))
+		u.conn.SetReadDeadline(time.Now().Add(gxtime.TimeSecondDuration(Conf.Core.UDPReadTimeout)))
 		length, peerAddr, err = u.conn.ReadFromUDP(buf)
 		if nerr, ok = err.(net.Error); ok && nerr.Timeout() {
 			continue
