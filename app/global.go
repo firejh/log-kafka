@@ -1,6 +1,7 @@
 package main
 
 import (
+	"sync/atomic"
 	"time"
 )
 
@@ -22,8 +23,8 @@ var (
 	Conf ConfYaml
 	// Log records server request log
 	Log gxlog.Logger
-	// now
-	Now time.Time
+	// now in unix time
+	Now int64
 	// kafka message pusher worker
 	Worker *KafkaWorker
 	// udp server
@@ -31,5 +32,5 @@ var (
 )
 
 func UpdateNow() {
-	Now = time.Now()
+	atomic.StoreInt64(&Now, int64(time.Now().Unix()))
 }

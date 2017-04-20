@@ -17,7 +17,7 @@ s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 # MAX = 65535
 MAX = 2
 PORT = 2000
-LOOP = 100
+LOOP = 80
 # print 'Address before sending:', s.getsockname()
 
 def client():

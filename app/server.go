@@ -8,7 +8,6 @@ import (
 )
 
 const (
-	MaxMsgLen    = 32 * 1024
 	ReadDeadline = 5e9
 )
 
@@ -67,7 +66,7 @@ func (u *UdpServer) start() {
 			Log.Warn("udp server exit now...")
 			break
 		}
-		buf = make([]byte, MaxMsgLen)
+		buf = make([]byte, Conf.Core.LogSize)
 		u.conn.SetReadDeadline(time.Now().Add(ReadDeadline))
 		length, peerAddr, err = u.conn.ReadFromUDP(buf)
 		if nerr, ok = err.(net.Error); ok && nerr.Timeout() {
@@ -78,6 +77,7 @@ func (u *UdpServer) start() {
 			continue
 		}
 
+		fmt.Printf("udp seq:%d\n", seq)
 		Worker.enqueueKafkaMessage(Message{key: []byte(fmt.Sprintf("%d", seq)), value: buf[:length]})
 		seq++
 	}

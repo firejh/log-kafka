@@ -50,7 +50,8 @@ def python_kafka_consumer_performance():
         for records in topic_to_records.values():
             print 'consume %s messages' % len(records)
             for msg in records:
-                print "msg:%s, msg len:%d" % (msg, len(msg.value))
+                print "msg:{topic:%s, partition:%s, offset:%s, key:%s}, msg len:%d" \
+                        % (msg.topic, msg.partition, msg.offset, msg.key, len(msg.value))
                 msg_consumed_count += 1
 
                 if msg_consumed_count >= msg_count:

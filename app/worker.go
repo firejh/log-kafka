@@ -11,6 +11,7 @@ import (
 import (
 	"github.com/AlexStocks/goext/log/kafka"
 	"github.com/AlexStocks/goext/runtime"
+	"github.com/AlexStocks/goext/time"
 	"github.com/Shopify/sarama"
 )
 
@@ -112,7 +113,8 @@ LOOP:
 		select {
 		case message = <-w.Q:
 			Log.Debug("dequeue{worker{%d-%d} , message{key:%q, value:%q}}}", index, id, string(message.key), string(message.value))
-			producer.SendBytes(Conf.Kafka.Topic, message.key, message.value, MessageMetadata{EnqueuedAt: Now, Key: string(message.key)})
+			producer.SendBytes(Conf.Kafka.Topic, message.key, message.value,
+				MessageMetadata{EnqueuedAt: gxtime.Unix2Time(atomic.LoadInt64(&Now)), Key: string(message.key)})
 
 		case <-w.done:
 			producer.Stop()

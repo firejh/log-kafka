@@ -29,6 +29,7 @@ type SectionCore struct {
 	QueueNum        int64      `yaml:"queue_num"`
 	PID             SectionPID `yaml:"pid"`
 	UDPPort         int        `yaml:"udp_port"`
+	LogSize         int        `yaml:"log_size"`
 }
 
 // SectionKafka is sub section of config.
