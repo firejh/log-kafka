@@ -21,13 +21,13 @@ import (
 )
 
 const (
-	APP_CONF_FILE           string = "APP_CONF_FILE"
-	APP_LOG_CONF_FILE       string = "APP_LOG_CONF_FILE"
-	APP_KAFKA_LOG_CONF_FILE string = "APP_KAFKA_LOG_CONF_FILE"
+	APP_CONF_FILE     string = "APP_CONF_FILE"
+	APP_LOG_CONF_FILE string = "APP_LOG_CONF_FILE"
 )
 
 const (
-	FAILFAST_TIMEOUT = 3 // in second
+	FailfastTimeout  = 3 // in second
+	KeepAliveTimeout = 1e9
 )
 
 var (
@@ -98,6 +98,7 @@ func createPIDFile() error {
 // initLog use for initial log module
 func initLog(logConf string) {
 	Log = gxlog.NewLoggerWithConfFile(logConf)
+	Log.SetAsDefaultLogger()
 }
 
 func initWorker() {
@@ -106,9 +107,12 @@ func initWorker() {
 }
 
 func initSignal() {
-	var seq int
-	// signal.Notify的ch信道是阻塞的(signal.Notify不会阻塞发送信号), 需要设置缓冲
-	signals := make(chan os.Signal, 1)
+	var (
+		seq int
+		// signal.Notify的ch信道是阻塞的(signal.Notify不会阻塞发送信号), 需要设置缓冲
+		signals = make(chan os.Signal, 1)
+		ticker  = time.NewTimer(KeepAliveTimeout)
+	)
 	// It is not possible to block SIGKILL or syscall.SIGSTOP
 	signal.Notify(signals, os.Interrupt, os.Kill, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 	for {
@@ -130,7 +134,8 @@ func initSignal() {
 				Log.Close()
 				return
 			}
-		case <-time.After(time.Duration(1e9)):
+		// case <-time.After(time.Duration(1e9)):
+		case <-ticker.C:
 			UpdateNow()
 			seq++
 			if seq%60 == 0 {
@@ -197,7 +202,7 @@ func main() {
 	// worker
 	/////////////////////////////////////////////////
 	if Conf.Core.FailFastTimeout == 0 {
-		Conf.Core.FailFastTimeout = FAILFAST_TIMEOUT
+		Conf.Core.FailFastTimeout = FailfastTimeout
 	}
 
 	getHostInfo()
