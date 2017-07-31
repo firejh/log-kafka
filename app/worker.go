@@ -100,6 +100,8 @@ func (w *KafkaWorker) startKafkaWorker() {
 		strings.Split(Conf.Kafka.Brokers, ","),
 		gxkafka.HASH,
 		true,
+		45,
+		sarama.CompressionLZ4,
 		msgCallback,
 		errCallback,
 	)
