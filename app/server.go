@@ -72,7 +72,7 @@ func (u *UdpServer) start() {
 			break
 		}
 		buf = make([]byte, Conf.Core.LogSize)
-		u.conn.SetReadDeadline(time.Now().Add(gxtime.TimeSecondDuration(Conf.Core.UDPReadTimeout)))
+		u.conn.SetReadDeadline(time.Now().Add(gxtime.TimeSecondDuration(float64(Conf.Core.UDPReadTimeout))))
 		length, peerAddr, err = u.conn.ReadFromUDP(buf)
 		if nerr, ok = err.(net.Error); ok && nerr.Timeout() {
 			continue
