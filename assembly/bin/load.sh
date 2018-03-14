@@ -12,6 +12,7 @@
 APP_NAME="APPLICATION_NAME"
 APP_ARGS=""
 SLEEP_INTERVAL=5
+MAX_LIFETIME=4000
 
 PROJECT_HOME=""
 OS_NAME=`uname`
@@ -32,7 +33,7 @@ usage() {
     echo "       $0 restart"
     echo "       $0 list"
     echo "       $0 monitor"
-    echo "       $0 periodic_restart"
+    echo "       $0 crontab"
     exit
 }
 
@@ -129,7 +130,7 @@ monitor() {
     done
 }
 
-periodic_restart() {
+crontab() {
     idx=0
     while true; do
         PID=`ps aux | grep -w ${APP_NAME} | grep -v grep | awk '{print $2}'`
@@ -172,8 +173,8 @@ case C"$opt" in
     Cmonitor)
         monitor
         ;;
-    Cperiodic_restart)
-        periodic_restart
+    Ccrontab)
+        crontab
         ;;
     C*)
         usage
