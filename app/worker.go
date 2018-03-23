@@ -21,6 +21,7 @@ import (
 import (
 	"github.com/AlexStocks/goext/log/kafka"
 	"github.com/AlexStocks/goext/runtime"
+	"github.com/AlexStocks/goext/strings"
 	"github.com/AlexStocks/goext/time"
 	"github.com/Shopify/sarama"
 )
@@ -92,17 +93,21 @@ func (w *KafkaWorker) startKafkaWorker() {
 	Log.Info("worker{%d-%d} starts to work now.", index, id)
 
 	msgCallback = func(message *sarama.ProducerMessage) {
+		var meta = message.Metadata.(MessageMetadata)
 		if Conf.Core.Mode != "release" {
-			var meta = message.Metadata.(MessageMetadata)
-			Log.Info("send msg{%v}, latency:%v, success num:%d, response{topic:%s, partition:%d, offset:%d}\n",
+			Log.Info("send msg{%v} successfully, latency:%v, success num:%d, response{topic:%s, partition:%d, offset:%d}",
+				meta.Key, meta.Latency(), successes, message.Topic, message.Partition, message.Offset)
+			KafkaLog.Info("send msg{%v} successfully, latency:%v, success num:%d, response{topic:%s, partition:%d, offset:%d}",
 				meta.Key, meta.Latency(), successes, message.Topic, message.Partition, message.Offset)
 		}
 		successes++
 		StatStorage.AddKafkaSuccess(1)
+		StatStorage.AddKafkaLatency(int64(meta.Latency()))
 	}
 
 	errCallback = func(err *sarama.ProducerError) {
-		Log.Warn("send msg:%v failed, fail num:%d. error:%v\n", err.Msg, failures, err.Error())
+		Log.Warn("send msg:%v failed, fail num:%d. error:%v", err.Msg, failures, err.Error())
+		KafkaLog.Warn("send msg:%v failed, fail num:%d. error:%v", err.Msg, failures, err.Error())
 		failures++
 		StatStorage.AddKafkaError(1)
 	}
@@ -127,9 +132,14 @@ LOOP:
 	for {
 		select {
 		case message = <-w.Q:
-			Log.Debug("dequeue{worker{%d-%d} , message{key:%q, value:%q}}}", index, id, string(message.key), string(message.value))
+			if Conf.Core.Mode != "release" {
+				Log.Info("dequeue{worker{%d-%d} , message{topic:%s, key:%q, value:%q}}}",
+					index, id, message.topic, gxstrings.String(message.key), gxstrings.String(message.value))
+				KafkaLog.Info("dequeue{worker{%d-%d} , message{topic:%s, key:%q, value:%q}}}",
+					index, id, message.topic, gxstrings.String(message.key), gxstrings.String(message.value))
+			}
 			producer.SendBytes(message.topic, message.key, message.value,
-				MessageMetadata{EnqueuedAt: gxtime.Unix2Time(atomic.LoadInt64(&Now)), Key: string(message.key)})
+				MessageMetadata{EnqueuedAt: gxtime.Unix2Time(atomic.LoadInt64(&Now)), Key: gxstrings.String(message.key)})
 			StatStorage.AddTotalCount(1)
 
 		case <-w.done:
@@ -148,8 +158,17 @@ func (w *KafkaWorker) Stop() {
 
 // queueNotification add kafka message to queue list.
 func (w *KafkaWorker) enqueueKafkaMessage(message Message) {
-	Log.Debug("enqueue{message{key:%q, value:%q}}", string(message.key), string(message.value))
+	if Conf.Core.Mode != "release" {
+		Log.Info("enqueue{Topic:%q, message{key:%q, value:%q}}",
+			message.topic, gxstrings.String(message.key), gxstrings.String(message.value))
+		KafkaLog.Info("enqueue{Topic:%q, message{key:%q, value:%q}}",
+			message.topic, gxstrings.String(message.key), gxstrings.String(message.value))
+	}
 	w.Q <- message
+}
+
+func (w *KafkaWorker) BufLen() int {
+	return len(w.Q)
 }
 
 func (w *KafkaWorker) Info() string {

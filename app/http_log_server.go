@@ -22,6 +22,7 @@ import (
 import (
 	"github.com/AlexStocks/goext/strings"
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 func uncompressZipText(text []byte) string {
@@ -88,7 +89,7 @@ func appLogHandler(c *gin.Context) {
 		})
 	}
 
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"status": "success",
 	})
 	StatStorage.AddHttpSuccess(1)

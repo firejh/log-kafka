@@ -1,6 +1,11 @@
 ## develop history ##
 ---
 
+- 2018/03/23
+    > improvement
+    * add http log interface
+    * add kafka/http log4go conf
+
 - 2017/07/31
     > bug fix
     * use new NewKafkaAsyncProducer

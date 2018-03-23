@@ -45,6 +45,9 @@ func (s *Storage) Reset() {
 	atomic.StoreInt64(&s.stat.TotalCount, 0)
 	atomic.StoreInt64(&s.stat.Kafka.LogKafkaSuccess, 0)
 	atomic.StoreInt64(&s.stat.Kafka.LogKafkaError, 0)
+	atomic.StoreInt64(&s.stat.Kafka.LatencyAvg, 0)
+	atomic.StoreInt64(&s.stat.Kafka.LatencySum, 0)
+	atomic.StoreInt64(&s.stat.Kafka.WorkerBufLen, 0)
 	atomic.StoreInt64(&s.stat.Udp.LogKafkaSuccess, 0)
 	atomic.StoreInt64(&s.stat.Udp.LogKafkaError, 0)
 	atomic.StoreInt64(&s.stat.Http.LogKafkaSuccess, 0)
@@ -64,6 +67,17 @@ func (s *Storage) AddKafkaSuccess(count int64) {
 // AddKafkaError record counts of error kafka log request.
 func (s *Storage) AddKafkaError(count int64) {
 	atomic.AddInt64(&s.stat.Kafka.LogKafkaError, count)
+}
+
+// AddKafkaLatency record latency of a kafka log request.
+func (s *Storage) AddKafkaLatency(count int64) {
+	sum := atomic.AddInt64(&s.stat.Kafka.LatencySum, count)
+	num := s.GetKafkaSuccess()
+	if num <= 0 {
+		num = 1
+	}
+
+	atomic.StoreInt64(&s.stat.Kafka.LatencyAvg, sum/num)
 }
 
 // AddUdpSuccess record counts of success iOS log request.
@@ -105,6 +119,25 @@ func (s *Storage) GetKafkaError() int64 {
 	count := atomic.LoadInt64(&s.stat.Kafka.LogKafkaError)
 
 	return count
+}
+
+// GetKafkaLatencySum show the account latency sum
+func (s *Storage) GetKafkaLatencySum() int64 {
+	count := atomic.LoadInt64(&s.stat.Kafka.LatencySum)
+
+	return count
+}
+
+// GetKafkaLatencyAvg show the average latency
+func (s *Storage) GetKafkaLatencyAvg() int64 {
+	count := atomic.LoadInt64(&s.stat.Kafka.LatencyAvg)
+
+	return count
+}
+
+// GetKafkaWorkerBufLen show the average latency
+func (s *Storage) GetKafkaWorkerBufLen() int64 {
+	return int64(Worker.BufLen())
 }
 
 // GetUdpSuccess show success counts of udp log requests
@@ -155,6 +188,9 @@ type StatusApp struct {
 type KafkaStatus struct {
 	LogKafkaSuccess int64 `json:"log_kafka_success"`
 	LogKafkaError   int64 `json:"log_kafka_error"`
+	LatencyAvg      int64 `json:"log_kafka_latency_avg"`
+	LatencySum      int64 `json:"log_kafka_latency_sum"`
+	WorkerBufLen    int64 `json:"log_kafka_worker_buf_len"`
 }
 
 // UDPStatus is udp structure
@@ -188,6 +224,9 @@ func appStatusHandler(c *gin.Context) {
 		Kafka: KafkaStatus{
 			LogKafkaSuccess: StatStorage.GetKafkaSuccess(),
 			LogKafkaError:   StatStorage.GetKafkaError(),
+			LatencyAvg:      StatStorage.GetKafkaLatencyAvg(),
+			LatencySum:      StatStorage.GetKafkaLatencySum(),
+			WorkerBufLen:    StatStorage.GetKafkaWorkerBufLen(),
 		},
 		Udp: UDPStatus{
 			LogKafkaSuccess: StatStorage.GetUdpSuccess(),
