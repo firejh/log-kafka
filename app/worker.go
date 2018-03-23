@@ -119,7 +119,7 @@ func (w *KafkaWorker) startKafkaWorker() {
 		gxkafka.HASH,
 		false,
 		45,
-		sarama.CompressionLZ4,
+		sarama.CompressionSnappy,
 		msgCallback,
 		errCallback,
 	)
