@@ -1,3 +1,13 @@
+/******************************************************
+# DESC    : the main process
+# AUTHOR  : Alex Stocks
+# VERSION : 1.0
+# LICENCE : Apache License 2.0
+# EMAIL   : alexstocks@foxmail.com
+# MOD     : 2018-03-22 20:45
+# FILE    : main.go
+******************************************************/
+
 package main
 
 import (
@@ -9,6 +19,7 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"syscall"
 	"time"
@@ -21,8 +32,10 @@ import (
 )
 
 const (
-	APP_CONF_FILE     string = "APP_CONF_FILE"
-	APP_LOG_CONF_FILE string = "APP_LOG_CONF_FILE"
+	APP_CONF_FILE           string = "APP_CONF_FILE"
+	APP_LOG_CONF_FILE       string = "APP_LOG_CONF_FILE"
+	APP_KAFKA_LOG_CONF_FILE string = "APP_KAFKA_LOG_CONF_FILE"
+	APP_HTTP_LOG_CONF_FILE  string = "APP_HTTP_LOG_CONF_FILE"
 )
 
 const (
@@ -35,9 +48,12 @@ var (
 
 	usageStr = `
 Usage: log-kafka [options]
+Go runtime version %s
 Server Options:
     -c, --config <file>              Configuration file path
     -l, --log <file>                 Log configuration file
+    -k, --kafka_log <file>           Kafka Log configuration file
+    -t, --http_log <file>            Http Log configuration file
 Common Options:
     -h, --help                       Show this message
     -v, --version                    Show version
@@ -46,7 +62,7 @@ Common Options:
 
 // usage will print out the flag options for the server.
 func usage() {
-	fmt.Printf("%s\n", usageStr)
+	fmt.Printf(usageStr+"\n", runtime.Version())
 	os.Exit(0)
 }
 
@@ -55,7 +71,7 @@ func getHostInfo() {
 		err error
 	)
 
-	LocalHost, err = os.Hostname()
+	Hostname, err := os.Hostname()
 	if err != nil {
 		panic(fmt.Sprintf("os.Hostname() = %s", err))
 	}
@@ -65,7 +81,7 @@ func getHostInfo() {
 		panic("can not get local IP!")
 	}
 
-	ProcessID = fmt.Sprintf("%s@%s", LocalIP, LocalHost)
+	ProcessID = fmt.Sprintf("%s@%s", LocalIP, Hostname)
 }
 
 func createPIDFile() error {
@@ -101,6 +117,16 @@ func initLog(logConf string) {
 	Log.SetAsDefaultLogger()
 }
 
+// initKafkaLog use for kafka log module
+func initKafkaLog(logConf string) {
+	KafkaLog = gxlog.NewLoggerWithConfFile(logConf)
+}
+
+// initHttpLog use for http log module
+func initHttpLog(logConf string) {
+	HTTPLog = gxlog.NewLoggerWithConfFile(logConf)
+}
+
 func initWorker() {
 	Worker = NewKafkaWorker()
 	Worker.Start(int64(Conf.Core.WorkerNum), int64(Conf.Core.QueueNum))
@@ -130,6 +156,8 @@ func initSignal() {
 
 				// 要么survialTimeout时间内执行完毕下面的逻辑然后程序退出，要么执行上面的超时函数程序强行退出
 				Server.Stop()
+				KafkaLog.Close()
+				HTTPLog.Close()
 				Log.Warn("app exit now...")
 				Log.Close()
 				return
@@ -147,10 +175,12 @@ func initSignal() {
 
 func main() {
 	var (
-		err         error
-		showVersion bool
-		configFile  string
-		logConf     string
+		err          error
+		showVersion  bool
+		configFile   string
+		logConf      string
+		kafkaLogConf string
+		httpLogConf  string
 	)
 
 	/////////////////////////////////////////////////
@@ -165,6 +195,10 @@ func main() {
 	flag.StringVar(&configFile, "config", "", "Configuration file path.")
 	flag.StringVar(&logConf, "l", "", "Logger configuration file.")
 	flag.StringVar(&logConf, "log", "", "Logger configuration file.")
+	flag.StringVar(&kafkaLogConf, "k", "", "Kafka logger configuration file.")
+	flag.StringVar(&kafkaLogConf, "kafka_log", "", "Kafka logger configuration file.")
+	flag.StringVar(&httpLogConf, "t", "", "Http logger configuration file.")
+	flag.StringVar(&httpLogConf, "http_log", "", "Http logger configuration file.")
 
 	flag.Usage = usage
 	flag.Parse()
@@ -198,6 +232,20 @@ func main() {
 		}
 	}
 
+	if kafkaLogConf == "" {
+		kafkaLogConf = os.Getenv(APP_KAFKA_LOG_CONF_FILE)
+		if kafkaLogConf == "" {
+			usage()
+		}
+	}
+
+	if httpLogConf == "" {
+		httpLogConf = os.Getenv(APP_HTTP_LOG_CONF_FILE)
+		if httpLogConf == "" {
+			usage()
+		}
+	}
+
 	/////////////////////////////////////////////////
 	// worker
 	/////////////////////////////////////////////////
@@ -208,10 +256,15 @@ func main() {
 	getHostInfo()
 
 	initLog(logConf)
+	initKafkaLog(kafkaLogConf)
+	initHttpLog(httpLogConf)
+	initAppStatus()
 
 	if err = createPIDFile(); err != nil {
 		Log.Critic(err)
 	}
+
+	initHTTPServer()
 
 	Server = NewUdpServer()
 	initWorker()

@@ -1,6 +1,6 @@
 # log-kafka #
 ---
- * receive udp log package and write it to kafka *
+ * receive udp/http log package and write it to kafka
  
 ## introdction ##
 ---

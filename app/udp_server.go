@@ -1,3 +1,13 @@
+/******************************************************
+# DESC    : the udp server to get log by udp datagram
+# AUTHOR  : Alex Stocks
+# VERSION : 1.0
+# LICENCE : Apache License 2.0
+# EMAIL   : alexstocks@foxmail.com
+# MOD     : 2018-03-22 20:46
+# FILE    : udp_server.go
+******************************************************/
+
 package main
 
 import (
@@ -78,12 +88,18 @@ func (u *UdpServer) start() {
 			continue
 		}
 		if length == 0 || err != nil {
+			StatStorage.AddUdpError(1)
 			Log.Warn("conn.ReadFromUDP() = {peer:%#v error:%#v}", peerAddr, err)
 			continue
 		}
 
-		fmt.Printf("udp seq:%d\n", seq)
-		Worker.enqueueKafkaMessage(Message{key: []byte(fmt.Sprintf("%d", seq)), value: buf[:length]})
+		//fmt.Printf("udp seq:%d\n", seq)
+		Worker.enqueueKafkaMessage(Message{
+			topic: Conf.Kafka.Topic,
+			key:   []byte(fmt.Sprintf("%d", seq)),
+			value: buf[:length],
+		})
+		StatStorage.AddUdpSuccess(1)
 		seq++
 	}
 }

@@ -11,12 +11,13 @@ package main
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"runtime"
 )
 
 var (
-	Version = "0.0.01"
-	DATE    = "2017/04/19"
+	Version = "0.1.1"
+	DATE    = "2018/03/22"
 )
 
 // SetVersion for setup Version string.
@@ -33,4 +34,13 @@ func PrintVersion() {
 		DATE,
 	)
 	fmt.Println()
+}
+
+// VersionMiddleware : add Version on header.
+func VersionMiddleware() gin.HandlerFunc {
+	// Set out header value for each response
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Server-Version", "Worker/"+Version)
+		c.Next()
+	}
 }

@@ -1,3 +1,13 @@
+/******************************************************
+# DESC    : configure
+# AUTHOR  : Alex Stocks
+# VERSION : 1.0
+# LICENCE : Apache License 2.0
+# EMAIL   : alexstocks@foxmail.com
+# MOD     : 2018-03-22 20:43
+# FILE    : config.go
+******************************************************/
+
 package main
 
 import (
@@ -11,6 +21,7 @@ import (
 // ConfYaml is config structure.
 type ConfYaml struct {
 	Core  SectionCore  `yaml:"core"`
+	API   SectionAPI   `yaml:"api"`
 	Kafka SectionKafka `yaml:"kafka"`
 }
 
@@ -31,7 +42,17 @@ type SectionCore struct {
 	UDPPort         int        `yaml:"udp_port"`
 	UDPReadBufSize  int        `yaml:"udp_read_buffer_size"`
 	UDPReadTimeout  int        `yaml:"udp_read_timeout"`
+	HTTPPort        int        `yaml:"http_port"`
 	LogSize         int        `yaml:"log_size"`
+}
+
+// SectionAPI is sub section of config.
+type SectionAPI struct {
+	StatGoURI  string `yaml:"stat_go_uri"`
+	StatAppURI string `yaml:"stat_app_uri"`
+	ConfigURI  string `yaml:"config_uri"`
+	SysStatURI string `yaml:"sys_stat_uri"`
+	AppLogURI  string `yaml:"app_log_uri"`
 }
 
 // SectionKafka is sub section of config.

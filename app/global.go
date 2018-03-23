@@ -1,3 +1,13 @@
+/******************************************************
+# DESC    : global variables
+# AUTHOR  : Alex Stocks
+# VERSION : 1.0
+# LICENCE : Apache License 2.0
+# EMAIL   : alexstocks@foxmail.com
+# MOD     : 2018-03-22 20:43
+# FILE    : global.go
+******************************************************/
+
 package main
 
 import (
@@ -9,20 +19,31 @@ import (
 	"github.com/AlexStocks/goext/log"
 )
 
+const (
+	logBizType = "pplog-biztype"
+	logZipType = "pplog-zip"
+	logText    = "pplog-log"
+)
+
 type (
 	empty interface{}
 )
 
 var (
 	// local ip
-	LocalIP   string
-	LocalHost string
+	LocalIP string
 	// progress id
 	ProcessID string
 	// Conf is main config
 	Conf ConfYaml
 	// Log records server request log
 	Log gxlog.Logger
+	// Log records kafka log
+	KafkaLog gxlog.Logger
+	// Log records http requests
+	HTTPLog gxlog.Logger
+	// StatStorage implements the storage interface
+	StatStorage *Storage
 	// now in unix time
 	Now int64
 	// kafka message pusher worker

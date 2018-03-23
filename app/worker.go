@@ -1,3 +1,13 @@
+/******************************************************
+# DESC    : log kafka producer
+# AUTHOR  : Alex Stocks
+# VERSION : 1.0
+# LICENCE : Apache License 2.0
+# EMAIL   : alexstocks@foxmail.com
+# MOD     : 2018-03-22 20:48
+# FILE    : worker.go
+******************************************************/
+
 package main
 
 import (
@@ -21,6 +31,7 @@ import (
 
 type (
 	Message struct {
+		topic string
 		key   []byte
 		value []byte
 	}
@@ -87,11 +98,13 @@ func (w *KafkaWorker) startKafkaWorker() {
 				meta.Key, meta.Latency(), successes, message.Topic, message.Partition, message.Offset)
 		}
 		successes++
+		StatStorage.AddKafkaSuccess(1)
 	}
 
 	errCallback = func(err *sarama.ProducerError) {
 		Log.Warn("send msg:%v failed, fail num:%d. error:%v\n", err.Msg, failures, err.Error())
 		failures++
+		StatStorage.AddKafkaError(1)
 	}
 
 	kafkaProducerID = fmt.Sprintf("%s-%d-%s-%d", LocalIP, Conf.Core.UDPPort, "telemetry", id)
@@ -99,7 +112,7 @@ func (w *KafkaWorker) startKafkaWorker() {
 		kafkaProducerID,
 		strings.Split(Conf.Kafka.Brokers, ","),
 		gxkafka.HASH,
-		true,
+		false,
 		45,
 		sarama.CompressionLZ4,
 		msgCallback,
@@ -115,8 +128,9 @@ LOOP:
 		select {
 		case message = <-w.Q:
 			Log.Debug("dequeue{worker{%d-%d} , message{key:%q, value:%q}}}", index, id, string(message.key), string(message.value))
-			producer.SendBytes(Conf.Kafka.Topic, message.key, message.value,
+			producer.SendBytes(message.topic, message.key, message.value,
 				MessageMetadata{EnqueuedAt: gxtime.Unix2Time(atomic.LoadInt64(&Now)), Key: string(message.key)})
+			StatStorage.AddTotalCount(1)
 
 		case <-w.done:
 			producer.Stop()
