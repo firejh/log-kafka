@@ -95,7 +95,7 @@ func (u *UdpServer) start() {
 
 		//fmt.Printf("udp seq:%d\n", seq)
 		Worker.enqueueKafkaMessage(Message{
-			topic: Conf.Kafka.Topic,
+			topic: Conf.Kafka.DefaultTopic,
 			key:   []byte(fmt.Sprintf("%d", seq)),
 			value: buf[:length],
 		})

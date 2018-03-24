@@ -57,8 +57,9 @@ type SectionAPI struct {
 
 // SectionKafka is sub section of config.
 type SectionKafka struct {
-	Brokers string `yaml:"brokers"`
-	Topic   string `yaml:"topic"`
+	Brokers      string   `yaml:"brokers"`
+	DefaultTopic string   `yaml:"default_topic"`
+	HTTPTopics   []string `yaml:"http_topics"`
 }
 
 // LoadConfYaml provide load yml config.

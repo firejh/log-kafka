@@ -23,4 +23,7 @@ api:
 kafka:
   # 多个broker之间逗号分隔
   brokers: "127.0.0.1:9092"
-  topic: "telemetry"
+  default_topic: "telemetry"
+  http_topics:
+    - http1
+    - http2

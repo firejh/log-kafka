@@ -23,6 +23,7 @@ import (
 	"github.com/AlexStocks/goext/strings"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"net/textproto"
 )
 
 func uncompressZipText(text []byte) string {
@@ -43,10 +44,13 @@ func uncompressGzipText(text []byte) string {
 
 func appLogHandler(c *gin.Context) {
 	var (
-		index                                 int
+		index, key                            int
 		bizType, zipType, logData, appLogData string
+		clientAddr                            string
 		lines                                 []string
 	)
+
+	clientAddr = c.GetHeader(textproto.CanonicalMIMEHeaderKey("X-Forwarded-For"))
 
 	bizType = c.PostForm(logBizType)
 	if len(bizType) == 0 {
@@ -55,6 +59,7 @@ func appLogHandler(c *gin.Context) {
 			"message": logBizType + " is nil",
 		})
 		StatStorage.AddHttpError(1)
+		HTTPLog.Warn("client:%q, bizType is nil", clientAddr)
 		return
 	}
 
@@ -66,6 +71,7 @@ func appLogHandler(c *gin.Context) {
 			"message": logText + " is nil",
 		})
 		StatStorage.AddHttpError(1)
+		HTTPLog.Warn("client:%q, logData is nil", clientAddr)
 		return
 	}
 
@@ -81,12 +87,15 @@ func appLogHandler(c *gin.Context) {
 	}
 
 	lines = strings.Split(appLogData, "\n")
+	key = int(StatStorage.GetHttpSuccess())
 	for index = range lines {
 		Worker.enqueueKafkaMessage(Message{
 			topic: bizType,
-			key:   []byte(fmt.Sprintf("%d", StatStorage.GetHttpSuccess())),
+			key:   []byte(fmt.Sprintf("%d", key)),
 			value: gxstrings.Slice(lines[index]),
 		})
+		HTTPLog.Debug("client:%q, log:{topic:%q, key:%d, value:%s}", clientAddr, key, lines[index])
+		key++
 	}
 
 	c.JSON(http.StatusOK, gin.H{

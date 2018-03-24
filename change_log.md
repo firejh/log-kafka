@@ -1,6 +1,11 @@
 ## develop history ##
 ---
 
+- 2018/03/24
+    > improvement
+    * add http log client
+    * add log filter for http log
+
 - 2018/03/23
     > improvement
     * add http log interface

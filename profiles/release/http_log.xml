@@ -3,7 +3,7 @@
     <tag>http_file</tag>
     <type>file</type>
     <level>INFO</level>
-    <property name="filename">logs/log_http_http.log</property>
+    <property name="filename">logs/log_kafka_http.log</property>
     <property name="format">[%D %T] [%L] [%S] %M</property>
     <property name="rotate">true</property> <!-- true enables log rotation, otherwise append -->
     <property name="maxsize">0M</property> <!-- \d+[KMG]? Suffixes are in terms of 2**10 -->
