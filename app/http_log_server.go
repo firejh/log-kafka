@@ -16,14 +16,14 @@ import (
 	"compress/zlib"
 	"fmt"
 	"io"
+	"net/http"
+	"net/textproto"
 	"strings"
 )
 
 import (
 	"github.com/AlexStocks/goext/strings"
 	"github.com/gin-gonic/gin"
-	"net/http"
-	"net/textproto"
 )
 
 func uncompressZipText(text []byte) string {
@@ -44,8 +44,9 @@ func uncompressGzipText(text []byte) string {
 
 func appLogHandler(c *gin.Context) {
 	var (
-		index, key                            int
+		index                                 int
 		bizType, zipType, logData, appLogData string
+		logKey                                []byte
 		clientAddr                            string
 		lines                                 []string
 	)
@@ -60,6 +61,16 @@ func appLogHandler(c *gin.Context) {
 		})
 		StatStorage.AddHttpError(1)
 		HTTPLog.Warn("client:%q, bizType is nil", clientAddr)
+		return
+	}
+
+	if !gxstrings.Contains(Conf.Kafka.HTTPTopics, bizType) {
+		c.JSON(460, gin.H{
+			"status":  "failed",
+			"message": bizType + " not exist",
+		})
+		StatStorage.AddHttpError(1)
+		HTTPLog.Warn("client:%q, bizType %s not exist", clientAddr, bizType)
 		return
 	}
 
@@ -86,16 +97,20 @@ func appLogHandler(c *gin.Context) {
 		appLogData = logData
 	}
 
+	// 使用不变的key，尽量使得这批log以batch方式快速塞入kafka
+	if len(logData) > 16 {
+		logKey = gxstrings.Slice(logData[:16])
+	} else {
+		logKey = gxstrings.Slice(fmt.Sprintf("%d", StatStorage.GetHttpSuccess()))
+	}
 	lines = strings.Split(appLogData, "\n")
-	key = int(StatStorage.GetHttpSuccess())
 	for index = range lines {
 		Worker.enqueueKafkaMessage(Message{
 			topic: bizType,
-			key:   []byte(fmt.Sprintf("%d", key)),
+			key:   logKey,
 			value: gxstrings.Slice(lines[index]),
 		})
-		HTTPLog.Debug("client:%q, log:{topic:%q, key:%d, value:%s}", clientAddr, key, lines[index])
-		key++
+		HTTPLog.Debug("client:%q, log:{topic:%q, key:%d, value:%s}", clientAddr, gxstrings.String(logKey), lines[index])
 	}
 
 	c.JSON(http.StatusOK, gin.H{

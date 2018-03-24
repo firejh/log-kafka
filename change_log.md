@@ -5,6 +5,7 @@
     > improvement
     * add http log client
     * add log filter for http log
+    * add ngx proxy tool
 
 - 2018/03/23
     > improvement
