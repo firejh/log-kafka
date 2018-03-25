@@ -260,6 +260,10 @@ func main() {
 	initHttpLog(httpLogConf)
 	initAppStatus()
 
+	for i := 0; i < 4096; i++ {
+		Log.Debug("hello %d", i)
+	}
+
 	if err = createPIDFile(); err != nil {
 		Log.Critic(err)
 	}

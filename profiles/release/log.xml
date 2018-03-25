@@ -14,6 +14,7 @@
     <property name="rotate">true</property> <!-- true enables log rotation, otherwise append -->
     <property name="maxsize">0M</property> <!-- \d+[KMG]? Suffixes are in terms of 2**10 -->
     <property name="maxlines">0K</property> <!-- \d+[KMG]? Suffixes are in terms of thousands -->
+    <property name="maxbackup">16</property> <!-- \d+ -->
     <property name="daily">true</property> <!-- Automatically rotates when a log message is written after midnight -->
   </filter>
   <filter enabled="true">
@@ -36,6 +37,7 @@
     <property name="rotate">true</property> <!-- true enables log rotation, otherwise append -->
     <property name="maxsize">0M</property> <!-- \d+[KMG]? Suffixes are in terms of 2**10 -->
     <property name="maxlines">0K</property> <!-- \d+[KMG]? Suffixes are in terms of thousands -->
+    <property name="maxbackup">16</property> <!-- \d+ -->
     <property name="daily">true</property> <!-- Automatically rotates when a log message is written after midnight -->
   </filter>
   <filter enabled="true">
@@ -47,6 +49,7 @@
     <property name="rotate">true</property> <!-- true enables log rotation, otherwise append -->
     <property name="maxsize">0M</property> <!-- \d+[KMG]? Suffixes are in terms of 2**10 -->
     <property name="maxlines">0K</property> <!-- \d+[KMG]? Suffixes are in terms of thousands -->
+    <property name="maxbackup">16</property> <!-- \d+ -->
     <property name="daily">true</property> <!-- Automatically rotates when a log message is written after midnight -->
   </filter>
   <filter enabled="false">
@@ -58,6 +61,7 @@
     <property name="rotate">true</property> <!-- true enables log rotation, otherwise append -->
     <property name="maxsize">0M</property> <!-- \d+[KMG]? Suffixes are in terms of 2**10 -->
     <property name="maxlines">0K</property> <!-- \d+[KMG]? Suffixes are in terms of thousands -->
+    <property name="maxbackup">16</property> <!-- \d+ -->
     <property name="daily">true</property> <!-- Automatically rotates when a log message is written after midnight -->
   </filter>
 </logging>
