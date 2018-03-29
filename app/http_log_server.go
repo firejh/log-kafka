@@ -11,36 +11,18 @@
 package main
 
 import (
-	"bytes"
-	"compress/gzip"
-	"compress/zlib"
 	"fmt"
-	"io"
 	"net/http"
 	"net/textproto"
 	"strings"
 )
 
 import (
+	"github.com/AlexStocks/goext/compress/gzip"
+	"github.com/AlexStocks/goext/compress/zlib"
 	"github.com/AlexStocks/goext/strings"
 	"github.com/gin-gonic/gin"
 )
-
-func uncompressZipText(text []byte) string {
-	b := bytes.NewReader(text)
-	var out bytes.Buffer
-	r, _ := zlib.NewReader(b)
-	io.Copy(&out, r)
-	return out.String()
-}
-
-func uncompressGzipText(text []byte) string {
-	b := bytes.NewReader(text)
-	var out bytes.Buffer
-	r, _ := gzip.NewReader(b)
-	io.Copy(&out, r)
-	return out.String()
-}
 
 func appLogHandler(c *gin.Context) {
 	var (
@@ -88,10 +70,10 @@ func appLogHandler(c *gin.Context) {
 
 	switch zipType {
 	case "zip":
-		appLogData = uncompressZipText(gxstrings.Slice(logData))
+		appLogData = gxstrings.String(gxzlib.DoZlibUncompress(gxstrings.Slice(logData)))
 
 	case "gzip":
-		appLogData = uncompressGzipText(gxstrings.Slice(logData))
+		appLogData = gxstrings.String(gxgzip.DoGzipUncompress(gxstrings.Slice(logData)))
 
 	default:
 		appLogData = logData
