@@ -24,6 +24,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	httpStatusIllegalParam = 460
+)
+
 func appLogHandler(c *gin.Context) {
 	var (
 		index                                 int
@@ -37,8 +41,8 @@ func appLogHandler(c *gin.Context) {
 
 	bizType = c.PostForm(logBizType)
 	if len(bizType) == 0 {
-		c.JSON(460, gin.H{
-			"status":  "failed",
+		c.JSON(httpStatusIllegalParam, gin.H{
+			"status":  httpStatusIllegalParam,
 			"message": logBizType + " is nil",
 		})
 		StatStorage.AddHttpError(1)
@@ -47,8 +51,8 @@ func appLogHandler(c *gin.Context) {
 	}
 
 	if !gxstrings.Contains(Conf.Kafka.HTTPTopics, bizType) {
-		c.JSON(460, gin.H{
-			"status":  "failed",
+		c.JSON(httpStatusIllegalParam, gin.H{
+			"status":  httpStatusIllegalParam,
 			"message": bizType + " not exist",
 		})
 		StatStorage.AddHttpError(1)
@@ -59,8 +63,8 @@ func appLogHandler(c *gin.Context) {
 	zipType = c.PostForm(logZipType)
 	logData = c.PostForm(logText)
 	if len(logData) == 0 {
-		c.JSON(460, gin.H{
-			"status":  "failed",
+		c.JSON(httpStatusIllegalParam, gin.H{
+			"status":  httpStatusIllegalParam,
 			"message": logText + " is nil",
 		})
 		StatStorage.AddHttpError(1)
@@ -78,6 +82,16 @@ func appLogHandler(c *gin.Context) {
 	default:
 		appLogData = logData
 	}
+	HTTPLog.Debug("zipType:%s, appLogData:%s", zipType, appLogData)
+	if appLogData == "" {
+		c.JSON(httpStatusIllegalParam, gin.H{
+			"status":  httpStatusIllegalParam,
+			"message": "appLogData is nil",
+		})
+		StatStorage.AddHttpError(1)
+		HTTPLog.Warn("client:%q, appLogData is nil")
+		return
+	}
 
 	// 使用不变的key，尽量使得这批log以batch方式快速塞入kafka
 	if len(logData) > 16 {
@@ -92,11 +106,12 @@ func appLogHandler(c *gin.Context) {
 			key:   logKey,
 			value: gxstrings.Slice(lines[index]),
 		})
-		HTTPLog.Debug("client:%q, log:{topic:%q, key:%d, value:%s}", clientAddr, gxstrings.String(logKey), lines[index])
+		HTTPLog.Debug("client:%q, log:{topic:%q, key:%d, value:%s}",
+			clientAddr, bizType, gxstrings.String(logKey), lines[index])
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status": "success",
+		"status": http.StatusOK,
 	})
 	StatStorage.AddHttpSuccess(1)
 }
