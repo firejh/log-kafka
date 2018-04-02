@@ -57,6 +57,14 @@ def client():
 
     print 'cost:', time.time() - start
 
+def input_echo():
+    while True:
+        data = raw_input('Input msg: ')
+        if len(data) == 0:
+            continue
+        s.sendto(data.encode(), ('127.0.0.1', 3000))
+        print (s.recv(1024).decode('utf-8'))
+
 if __name__ == "__main__":
     # client()
     # 由于log-kafka是面向无连接的，所以使用client1会减少丢包
