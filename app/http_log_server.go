@@ -83,30 +83,32 @@ func appLogHandler(c *gin.Context) {
 	case "zip":
 		if unzipBytes, err = gxzlib.DoZlibUncompress(gxstrings.Slice(logData)); err != nil {
 			HTTPLog.Error("zipType:zip, gxzlib.DoZlibUncompress() = error:%s", errors.ErrorStack(err))
-			if unzipBytes, err = gxgzip.DoGzipUncompress(gxstrings.Slice(logData)); err != nil {
-				HTTPLog.Error("zipType:zip, gxzlib.DoGzipUncompress() = error:%s", errors.ErrorStack(err))
-				c.JSON(httpStatusIllegalParam, gin.H{
-					"status":  httpStatusIllegalParam,
-					"message": "can not uncompress log",
-				})
-				StatStorage.AddHttpError(1)
-				return
-			}
+			// if unzipBytes, err = gxgzip.DoGzipUncompress(gxstrings.Slice(logData)); err != nil {
+			//	ioutil.WriteFile("./log.zip", gxstrings.Slice(logData), 0644)
+			// HTTPLog.Error("zipType:zip, gxzlib.DoGzipUncompress() = error:%s", errors.ErrorStack(err))
+			c.JSON(httpStatusIllegalParam, gin.H{
+				"status":  httpStatusIllegalParam,
+				"message": "can not uncompress log",
+			})
+			StatStorage.AddHttpError(1)
+			return
+			// }
 		}
 		appLogData = gxstrings.String(unzipBytes)
 
 	case "gzip":
 		if unzipBytes, err = gxgzip.DoGzipUncompress(gxstrings.Slice(logData)); err != nil {
 			HTTPLog.Error("zipType:gzip, gxzlib.DoGzipUncompress() = error:%s", errors.ErrorStack(err))
-			if unzipBytes, err = gxzlib.DoZlibUncompress(gxstrings.Slice(logData)); err != nil {
-				HTTPLog.Error("zipType:gzip, gxzlib.DoZlibUncompress() = error:%s", errors.ErrorStack(err))
-				c.JSON(httpStatusIllegalParam, gin.H{
-					"status":  httpStatusIllegalParam,
-					"message": "can not uncompress log",
-				})
-				StatStorage.AddHttpError(1)
-				return
-			}
+			// if unzipBytes, err = gxzlib.DoZlibUncompress(gxstrings.Slice(logData)); err != nil {
+			//	ioutil.WriteFile("./log.gzip", gxstrings.Slice(logData), 0644)
+			// HTTPLog.Error("zipType:gzip, gxzlib.DoZlibUncompress() = error:%s", errors.ErrorStack(err))
+			c.JSON(httpStatusIllegalParam, gin.H{
+				"status":  httpStatusIllegalParam,
+				"message": "can not uncompress log",
+			})
+			StatStorage.AddHttpError(1)
+			return
+			// }
 		}
 		appLogData = gxstrings.String(unzipBytes)
 
