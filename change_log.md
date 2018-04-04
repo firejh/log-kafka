@@ -1,7 +1,10 @@
 ## develop history ##
 ---
 
-
+- 2018/04/04
+    > bug fix
+    * check error when zip/gzip uncompress
+    
 - 2018/04/02
     > feature
     * add udp nginx conf

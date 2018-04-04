@@ -22,6 +22,7 @@ import (
 	"github.com/AlexStocks/goext/compress/zlib"
 	"github.com/AlexStocks/goext/strings"
 	"github.com/gin-gonic/gin"
+	"github.com/juju/errors"
 )
 
 const (
@@ -30,14 +31,17 @@ const (
 
 func appLogHandler(c *gin.Context) {
 	var (
+		err                                   error
 		index                                 int
 		bizType, zipType, logData, appLogData string
+		unzipBytes                            []byte
 		logKey                                []byte
 		clientAddr                            string
 		lines                                 []string
 	)
 
 	clientAddr = c.GetHeader(textproto.CanonicalMIMEHeaderKey("X-Forwarded-For"))
+	HTTPLog.Debug("clientAddr:%+v", clientAddr)
 
 	bizType = c.PostForm(logBizType)
 	if len(bizType) == 0 {
@@ -49,6 +53,7 @@ func appLogHandler(c *gin.Context) {
 		HTTPLog.Warn("client:%q, bizType is nil", clientAddr)
 		return
 	}
+	HTTPLog.Debug("bizType:%+v", bizType)
 
 	if !gxstrings.Contains(Conf.Kafka.HTTPTopics, bizType) {
 		c.JSON(httpStatusIllegalParam, gin.H{
@@ -62,6 +67,7 @@ func appLogHandler(c *gin.Context) {
 
 	zipType = c.PostForm(logZipType)
 	logData = c.PostForm(logText)
+	HTTPLog.Debug("zipType:%v, logData:%v", zipType, logData)
 	if len(logData) == 0 {
 		c.JSON(httpStatusIllegalParam, gin.H{
 			"status":  httpStatusIllegalParam,
@@ -72,12 +78,37 @@ func appLogHandler(c *gin.Context) {
 		return
 	}
 
+	err = nil
 	switch zipType {
 	case "zip":
-		appLogData = gxstrings.String(gxzlib.DoZlibUncompress(gxstrings.Slice(logData)))
+		if unzipBytes, err = gxzlib.DoZlibUncompress(gxstrings.Slice(logData)); err != nil {
+			HTTPLog.Error("zipType:zip, gxzlib.DoZlibUncompress() = error:%s", errors.ErrorStack(err))
+			if unzipBytes, err = gxgzip.DoGzipUncompress(gxstrings.Slice(logData)); err != nil {
+				HTTPLog.Error("zipType:zip, gxzlib.DoGzipUncompress() = error:%s", errors.ErrorStack(err))
+				c.JSON(httpStatusIllegalParam, gin.H{
+					"status":  httpStatusIllegalParam,
+					"message": "can not uncompress log",
+				})
+				StatStorage.AddHttpError(1)
+				return
+			}
+		}
+		appLogData = gxstrings.String(unzipBytes)
 
 	case "gzip":
-		appLogData = gxstrings.String(gxgzip.DoGzipUncompress(gxstrings.Slice(logData)))
+		if unzipBytes, err = gxgzip.DoGzipUncompress(gxstrings.Slice(logData)); err != nil {
+			HTTPLog.Error("zipType:gzip, gxzlib.DoGzipUncompress() = error:%s", errors.ErrorStack(err))
+			if unzipBytes, err = gxzlib.DoZlibUncompress(gxstrings.Slice(logData)); err != nil {
+				HTTPLog.Error("zipType:gzip, gxzlib.DoZlibUncompress() = error:%s", errors.ErrorStack(err))
+				c.JSON(httpStatusIllegalParam, gin.H{
+					"status":  httpStatusIllegalParam,
+					"message": "can not uncompress log",
+				})
+				StatStorage.AddHttpError(1)
+				return
+			}
+		}
+		appLogData = gxstrings.String(unzipBytes)
 
 	default:
 		appLogData = logData
