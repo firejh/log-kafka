@@ -16,6 +16,7 @@ import (
 )
 
 import (
+	"github.com/AlexStocks/goext/database/registry"
 	"github.com/AlexStocks/goext/log"
 )
 
@@ -50,6 +51,8 @@ var (
 	Worker *KafkaWorker
 	// udp server
 	Server *UdpServer
+	// register
+	Register gxregistry.Registry
 )
 
 func UpdateNow() {

@@ -26,9 +26,12 @@ import (
 )
 
 import (
+	"github.com/AlexStocks/goext/database/registry"
+	"github.com/AlexStocks/goext/database/registry/etcdv3"
 	"github.com/AlexStocks/goext/log"
 	"github.com/AlexStocks/goext/net"
 	"github.com/AlexStocks/goext/time"
+	jerrors "github.com/juju/errors"
 )
 
 const (
@@ -132,6 +135,46 @@ func initWorker() {
 	Worker.Start(int64(Conf.Core.WorkerNum), int64(Conf.Core.QueueNum))
 }
 
+func initRegistry() error {
+	var (
+		err     error
+		service gxregistry.Service
+	)
+
+	Register, err = gxetcd.NewRegistry(
+		gxregistry.WithAddrs(Conf.Etcd.Addrs...),
+		gxregistry.WithRoot(Conf.Etcd.RegistryRoot),
+		gxregistry.WithTimeout(gxtime.TimeSecondDuration(float64(Conf.Etcd.ConnectTTL))),
+	)
+	if err != nil {
+		return jerrors.Annotate(err, "gxetcd.NewRegistry")
+	}
+
+	service = gxregistry.Service{
+		Attr: &gxregistry.ServiceAttr{
+			Group:    Conf.Etcd.ServiceGroup,
+			Service:  Conf.Etcd.ServiceName,
+			Protocol: Conf.Etcd.ServiceProtocol,
+			Version:  Conf.Etcd.ServiceVersion,
+			Role:     gxregistry.SRT_Provider,
+		},
+		Nodes: []*gxregistry.Node{
+			&gxregistry.Node{
+				ID:      Conf.Etcd.NodeID,
+				Address: Conf.Core.LocalIP,
+				Port:    int32(Conf.Core.UDPPort),
+			},
+		},
+	}
+
+	err = Register.Register(service)
+	if err != nil {
+		return jerrors.Annotatef(err, "Register.Register(service:%+v)", service)
+	}
+
+	return nil
+}
+
 func initSignal() {
 	var (
 		seq int
@@ -158,6 +201,7 @@ func initSignal() {
 				Server.Stop()
 				KafkaLog.Close()
 				HTTPLog.Close()
+				Register.Close()
 				Log.Warn("app exit now...")
 				Log.Close()
 				return
@@ -272,6 +316,10 @@ func main() {
 
 	Server = NewUdpServer()
 	initWorker()
+
+	if err = initRegistry(); err != nil {
+		log.Fatal("initRegistry() = err:%+v", err)
+	}
 
 	initSignal()
 }

@@ -23,6 +23,7 @@ type ConfYaml struct {
 	Core  SectionCore  `yaml:"core"`
 	API   SectionAPI   `yaml:"api"`
 	Kafka SectionKafka `yaml:"kafka"`
+	Etcd  SectionEtcd  `yaml:"etcd"`
 }
 
 // SectionPID is sub section of config.
@@ -39,6 +40,7 @@ type SectionCore struct {
 	WorkerNum       int64      `yaml:"worker_num"`
 	QueueNum        int64      `yaml:"queue_num"`
 	PID             SectionPID `yaml:"pid"`
+	LocalIP         string     `yaml:"local_ip"`
 	UDPPort         int        `yaml:"udp_port"`
 	UDPReadBufSize  int        `yaml:"udp_read_buffer_size"`
 	UDPReadTimeout  int        `yaml:"udp_read_timeout"`
@@ -60,6 +62,18 @@ type SectionKafka struct {
 	Brokers      string   `yaml:"brokers"`
 	DefaultTopic string   `yaml:"default_topic"`
 	HTTPTopics   []string `yaml:"http_topics"`
+}
+
+// SectionEtcd is sub section of etcd.
+type SectionEtcd struct {
+	Addrs           []string `yaml:"addrs"`
+	ConnectTTL      int      `yaml:"connect_ttl"`
+	RegistryRoot    string   `yaml:"registry_root"`
+	ServiceGroup    string   `yaml:"service_group"`
+	ServiceName     string   `yaml:"service_name"`
+	ServiceProtocol string   `yaml:"service_protocol"`
+	ServiceVersion  string   `yaml:"service_version"`
+	NodeID          string   `yaml:"node_id"`
 }
 
 // LoadConfYaml provide load yml config.
