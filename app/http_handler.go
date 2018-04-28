@@ -36,8 +36,9 @@ func routerEngine() *gin.Engine {
 	r.GET(Conf.API.StatAppURI, appStatusHandler)
 	r.GET(Conf.API.ConfigURI, configHandler)
 	r.GET(Conf.API.SysStatURI, sysStatsHandler)
-	r.GET("/", rootHandler)
 	r.POST(Conf.API.AppLogURI, appLogHandler)
+	r.POST(Conf.API.LogServersURI, getLogServersHandler)
+	r.GET("/", rootHandler)
 
 	return r
 }

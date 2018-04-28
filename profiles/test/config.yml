@@ -19,6 +19,7 @@ api:
   config_uri: "/api/config"
   sys_stat_uri: "/sys/stats"
   app_log_uri: "/api/app/logs"
+  log_servers_uri: "/api/log_servers"
 
 kafka:
   # 多个broker之间逗号分隔
@@ -27,3 +28,15 @@ kafka:
   http_topics:
     - http1
     - http2
+
+etcd:
+  addrs:
+    - "127.0.0.1:2079"
+  connect_ttl: 10
+  registry_root: "/server_log_servers"
+  service_group: "bj"
+  service_name: "test"
+  service_protocol: "udp"
+  service_version: "v0.1"
+  node_id: "log_server0"
+

@@ -50,11 +50,12 @@ type SectionCore struct {
 
 // SectionAPI is sub section of config.
 type SectionAPI struct {
-	StatGoURI  string `yaml:"stat_go_uri"`
-	StatAppURI string `yaml:"stat_app_uri"`
-	ConfigURI  string `yaml:"config_uri"`
-	SysStatURI string `yaml:"sys_stat_uri"`
-	AppLogURI  string `yaml:"app_log_uri"`
+	StatGoURI     string `yaml:"stat_go_uri"`
+	StatAppURI    string `yaml:"stat_app_uri"`
+	ConfigURI     string `yaml:"config_uri"`
+	SysStatURI    string `yaml:"sys_stat_uri"`
+	AppLogURI     string `yaml:"app_log_uri"`
+	LogServersURI string `yaml:"log_servers_uri"`
 }
 
 // SectionKafka is sub section of config.

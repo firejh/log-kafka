@@ -26,6 +26,8 @@ import (
 )
 
 import (
+	"github.com/AlexStocks/goext/database/filter"
+	"github.com/AlexStocks/goext/database/filter/pool"
 	"github.com/AlexStocks/goext/database/registry"
 	"github.com/AlexStocks/goext/database/registry/etcdv3"
 	"github.com/AlexStocks/goext/log"
@@ -172,6 +174,15 @@ func initRegistry() error {
 		return jerrors.Annotatef(err, "Register.Register(service:%+v)", service)
 	}
 
+	Filter, err = gxpool.NewFilter(
+		gxfilter.WithBalancerMode(gxfilter.SM_Hash),
+		gxfilter.WithRegistry(Register),
+		gxpool.WithTTL(10e9),
+	)
+	if err != nil {
+		return jerrors.Annotatef(err, "NewFilter")
+	}
+
 	return nil
 }
 
@@ -201,6 +212,7 @@ func initSignal() {
 				Server.Stop()
 				KafkaLog.Close()
 				HTTPLog.Close()
+				Filter.Close()
 				Register.Close()
 				Log.Warn("app exit now...")
 				Log.Close()

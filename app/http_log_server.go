@@ -20,14 +20,83 @@ import (
 import (
 	"github.com/AlexStocks/goext/compress/gzip"
 	"github.com/AlexStocks/goext/compress/zlib"
+	"github.com/AlexStocks/goext/database/registry"
 	"github.com/AlexStocks/goext/strings"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/json"
 	"github.com/juju/errors"
 )
 
 const (
 	httpStatusIllegalParam = 460
+	httpStatusServerFail   = 520
 )
+
+func getLogServersHandler(c *gin.Context) {
+	var (
+		err                 error
+		bizType, bizVersion string
+		clientAddr          string
+		attr                gxregistry.ServiceAttr
+		services            []*gxregistry.Service
+		result              gxregistry.Service
+		jsonBytes           []byte
+	)
+
+	clientAddr = c.GetHeader(textproto.CanonicalMIMEHeaderKey("X-Forwarded-For"))
+	HTTPLog.Debug("clientAddr:%+v", clientAddr)
+
+	bizType = c.PostForm(logBizType)
+	if len(bizType) == 0 {
+		c.JSON(httpStatusIllegalParam, gin.H{
+			"status":  httpStatusIllegalParam,
+			"message": logBizType + " is nil",
+		})
+		StatStorage.AddHttpError(1)
+		HTTPLog.Warn("client:%q, bizType is nil", clientAddr)
+		return
+	}
+	bizVersion = c.PostForm(logBizVersion)
+	HTTPLog.Debug("bizType:%+v, bizVersion:%+v", bizType, bizVersion)
+
+	attr = gxregistry.ServiceAttr{
+		Service: bizType,
+		Version: bizVersion,
+	}
+	services, err = Filter.GetService(attr)
+	if err != nil || len(services) == 0 {
+		c.JSON(httpStatusIllegalParam, gin.H{
+			"status":  httpStatusServerFail,
+			"message": err.Error(),
+		})
+		StatStorage.AddHttpError(1)
+		HTTPLog.Warn("Filter.GetService(attr:%+v) = error:%q", attr, err)
+		return
+	}
+
+	result.Attr = &attr
+	for i := range services {
+		for j := range services[i].Nodes {
+			result.Nodes = append(result.Nodes, services[i].Nodes[j])
+		}
+	}
+	jsonBytes, err = json.Marshal(result)
+	if err != nil {
+		c.JSON(httpStatusIllegalParam, gin.H{
+			"status":  httpStatusServerFail,
+			"message": err.Error(),
+		})
+		StatStorage.AddHttpError(1)
+		HTTPLog.Warn("json.Marshal(result:%+v) = error:%q", result, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": http.StatusOK,
+		"nodes":  string(jsonBytes),
+	})
+	StatStorage.AddHttpSuccess(1)
+}
 
 func appLogHandler(c *gin.Context) {
 	var (

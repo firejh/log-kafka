@@ -16,14 +16,16 @@ import (
 )
 
 import (
+	"github.com/AlexStocks/goext/database/filter"
 	"github.com/AlexStocks/goext/database/registry"
 	"github.com/AlexStocks/goext/log"
 )
 
 const (
-	logBizType = "pplog-biztype"
-	logZipType = "pplog-zip"
-	logText    = "pplog-log"
+	logBizType    = "pplog-biztype"
+	logBizVersion = "pplog-bizversion"
+	logZipType    = "pplog-zip"
+	logText       = "pplog-log"
 )
 
 type (
@@ -53,6 +55,8 @@ var (
 	Server *UdpServer
 	// register
 	Register gxregistry.Registry
+	// filter
+	Filter gxfilter.Filter
 )
 
 func UpdateNow() {
