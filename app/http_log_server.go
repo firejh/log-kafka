@@ -76,6 +76,7 @@ func getLogServersHandler(c *gin.Context) {
 		return
 	}
 
+	HTTPLog.Debug("services:%+v", services)
 	result.Attr = &attr
 	for i := range services {
 		for j := range services[i].Nodes {

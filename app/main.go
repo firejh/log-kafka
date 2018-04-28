@@ -177,7 +177,7 @@ func initRegistry() error {
 	Filter, err = gxpool.NewFilter(
 		gxfilter.WithBalancerMode(gxfilter.SM_Hash),
 		gxfilter.WithRegistry(Register),
-		gxpool.WithTTL(10e9),
+		gxpool.WithTTL(900e9),
 	)
 	if err != nil {
 		return jerrors.Annotatef(err, "NewFilter")
