@@ -62,7 +62,9 @@ func getLogServersHandler(c *gin.Context) {
 	attr = gxregistry.ServiceAttr{
 		Service: bizType,
 		Version: bizVersion,
+		Role:    gxregistry.SRT_Provider,
 	}
+
 	services, err = Filter.GetService(attr)
 	if err != nil || len(services) == 0 {
 		c.JSON(httpStatusIllegalParam, gin.H{
@@ -70,7 +72,7 @@ func getLogServersHandler(c *gin.Context) {
 			"message": err.Error(),
 		})
 		StatStorage.AddHttpError(1)
-		HTTPLog.Warn("Filter.GetService(attr:%+v) = error:%q", attr, err)
+		HTTPLog.Warn("Filter.GetService(attr:%+v) = error:%q, services:%+v", attr, err, services)
 		return
 	}
 
@@ -90,6 +92,7 @@ func getLogServersHandler(c *gin.Context) {
 		HTTPLog.Warn("json.Marshal(result:%+v) = error:%q", result, err)
 		return
 	}
+	HTTPLog.Debug("services:%+v, result:%+v", services, result)
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": http.StatusOK,

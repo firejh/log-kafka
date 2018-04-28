@@ -60,9 +60,9 @@ type SectionAPI struct {
 
 // SectionKafka is sub section of config.
 type SectionKafka struct {
-	Brokers      string   `yaml:"brokers"`
-	DefaultTopic string   `yaml:"default_topic"`
-	HTTPTopics   []string `yaml:"http_topics"`
+	Brokers    string   `yaml:"brokers"`
+	UDPTopic   string   `yaml:"udp_topic"`
+	HTTPTopics []string `yaml:"http_topics"`
 }
 
 // SectionEtcd is sub section of etcd.

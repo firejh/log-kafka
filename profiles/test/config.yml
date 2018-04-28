@@ -3,6 +3,7 @@ core:
   worker_num: 8
   queue_num: 64
   fail_fast_timeout: 3 # 当程序收到signal时候，要保证在fail_fast_timeout(unit: second)时间段内退出
+  local_ip: 127.0.0.1
   udp_port: 2000
   udp_read_buffer_size: 8388608
   udp_read_timeout: 3
@@ -19,19 +20,19 @@ api:
   config_uri: "/api/config"
   sys_stat_uri: "/sys/stats"
   app_log_uri: "/api/app/logs"
-  log_servers_uri: "/api/log_servers"
+  log_servers_uri: "/api/server/log_servers"
 
 kafka:
   # 多个broker之间逗号分隔
   brokers: "127.0.0.1:9092"
-  default_topic: "telemetry"
+  udp_topic: "telemetry"
   http_topics:
     - http1
     - http2
 
 etcd:
   addrs:
-    - "127.0.0.1:2079"
+    - "127.0.0.1:2379"
   connect_ttl: 10
   registry_root: "/server_log_servers"
   service_group: "bj"
@@ -39,4 +40,3 @@ etcd:
   service_protocol: "udp"
   service_version: "v0.1"
   node_id: "log_server0"
-
