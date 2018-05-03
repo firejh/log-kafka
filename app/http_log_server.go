@@ -96,8 +96,8 @@ func getLogServersHandler(c *gin.Context) {
 	HTTPLog.Debug("services:%+v, result:%+v", services, result)
 
 	c.JSON(http.StatusOK, gin.H{
-		"status": http.StatusOK,
-		"nodes":  string(jsonBytes),
+		"status":  http.StatusOK,
+		"service": string(jsonBytes),
 	})
 	StatStorage.AddHttpSuccess(1)
 }
