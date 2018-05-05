@@ -22,10 +22,11 @@ import (
 )
 
 const (
-	logBizType    = "pplog-biztype"
-	logBizVersion = "pplog-bizversion"
-	logZipType    = "pplog-zip"
-	logText       = "pplog-log"
+	logBizType     = "pplog-biztype"
+	logBizVersion  = "pplog-bizversion"
+	logBizProtocol = "pplog-protocol"
+	logZipType     = "pplog-zip"
+	logText        = "pplog-log"
 )
 
 type (

@@ -34,19 +34,24 @@ const (
 
 func getLogServersHandler(c *gin.Context) {
 	var (
-		err                 error
-		bizType, bizVersion string
-		clientAddr          string
-		attr                gxregistry.ServiceAttr
-		services            []*gxregistry.Service
-		result              gxregistry.Service
-		jsonBytes           []byte
+		err         error
+		bizType     string
+		bizVersion  string
+		bizProtocol string
+		clientAddr  string
+		attr        gxregistry.ServiceAttr
+		services    []*gxregistry.Service
+		result      gxregistry.Service
+		jsonBytes   []byte
 	)
 
 	clientAddr = c.GetHeader(textproto.CanonicalMIMEHeaderKey("X-Forwarded-For"))
 	HTTPLog.Debug("clientAddr:%+v", clientAddr)
 
 	bizType = c.PostForm(logBizType)
+	bizVersion = c.PostForm(logBizVersion)
+	bizProtocol = c.PostForm(logBizProtocol)
+	HTTPLog.Debug("bizType:%+v, bizVersion:%+v, bizProtocol:%+v", bizType, bizVersion, bizProtocol)
 	if len(bizType) == 0 {
 		c.JSON(httpStatusIllegalParam, gin.H{
 			"status":  httpStatusIllegalParam,
@@ -56,13 +61,12 @@ func getLogServersHandler(c *gin.Context) {
 		HTTPLog.Warn("client:%q, bizType is nil", clientAddr)
 		return
 	}
-	bizVersion = c.PostForm(logBizVersion)
-	HTTPLog.Debug("bizType:%+v, bizVersion:%+v", bizType, bizVersion)
 
 	attr = gxregistry.ServiceAttr{
-		Service: bizType,
-		Version: bizVersion,
-		Role:    gxregistry.SRT_Provider,
+		Service:  bizType,
+		Version:  bizVersion,
+		Role:     gxregistry.SRT_Provider,
+		Protocol: bizProtocol,
 	}
 
 	services, err = Filter.GetService(attr)
