@@ -19,6 +19,8 @@ OS_NAME=`uname`
 if [[ ${OS_NAME} != "Windows" ]]; then
     PROJECT_HOME=`pwd`
     PROJECT_HOME=${PROJECT_HOME}"/"
+else
+    APP_NAME="APPLICATION_NAME.exe"
 fi
 
 export APP_CONF_FILE=${PROJECT_HOME}"TARGET_CONF_FILE"
