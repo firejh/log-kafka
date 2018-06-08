@@ -29,6 +29,9 @@ import (
 /////////////////////////////////////////////////
 // worker
 /////////////////////////////////////////////////
+var (
+	workerTickerDuration = 5 * time.Second
+)
 
 type (
 	Message struct {
@@ -41,7 +44,6 @@ type (
 		Q    chan Message
 		lock sync.Mutex
 		done chan empty
-		tick chan empty
 		wg   sync.WaitGroup
 	}
 
@@ -58,11 +60,8 @@ func (mm *MessageMetadata) Latency() time.Duration {
 func NewKafkaWorker() *KafkaWorker {
 	return &KafkaWorker{
 		done: make(chan empty),
-		tick: make(chan empty),
 	}
 }
-
-
 
 // Start for initialize all workers.
 func (w *KafkaWorker) Start(workerNum int64, queueNum int64) {
@@ -134,6 +133,8 @@ func (w *KafkaWorker) startKafkaWorker(workerIndex int64) {
 	}
 	producer.Start()
 
+	t := time.NewTimer(workerTickerDuration)
+
 LOOP:
 	for {
 		select {
@@ -148,7 +149,7 @@ LOOP:
 				MessageMetadata{EnqueuedAt: gxtime.Unix2Time(atomic.LoadInt64(&Now)), Key: gxstrings.String(message.key)})
 			StatStorage.AddTotalCount(1)
 
-		case <-w.tick:
+		case <-t.C:
 			if KafkaInfo.workers[workerIndex] == false {
 				producer.Stop()
 				for {
@@ -189,11 +190,6 @@ LOOP:
 func (w *KafkaWorker) Stop() {
 	close(w.done)
 	w.wg.Wait()
-}
-
-func (w *KafkaWorker) Tick() {
-	close(w.tick)
-	w.tick = make(chan empty)
 }
 
 // queueNotification add kafka message to queue list.

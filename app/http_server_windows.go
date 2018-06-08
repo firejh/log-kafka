@@ -12,8 +12,6 @@ package main
 
 import (
 	"fmt"
-)
-import (
 	"net/http"
 )
 

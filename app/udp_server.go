@@ -115,8 +115,6 @@ func (u *UdpServer) start() {
 			continue
 		}
 
-		fmt.Printf("get msg success and send\n")
-
 		//fmt.Printf("udp seq:%d\n", seq)
 		Worker.enqueueKafkaMessage(Message{
 			topic: topic,

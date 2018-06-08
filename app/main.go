@@ -45,7 +45,7 @@ const (
 
 const (
 	FailfastTimeout  = 3 // in second
-	KeepAliveTimeout = 1e9
+	KeepAliveTimeout = 10
 )
 
 var (
@@ -204,7 +204,7 @@ func initSignal() {
 		seq int
 		// signal.Notify的ch信道是阻塞的(signal.Notify不会阻塞发送信号), 需要设置缓冲
 		signals = make(chan os.Signal, 1)
-		ticker  = time.NewTicker(time.Second * 1)
+		ticker  = time.NewTicker(KeepAliveTimeout * time.Second)
 	)
 	// It is not possible to block SIGKILL or syscall.SIGSTOP
 	signal.Notify(signals, os.Interrupt, os.Kill, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
@@ -235,7 +235,6 @@ func initSignal() {
 		// case <-time.After(time.Duration(1e9)):
 		case <-ticker.C:
 			UpdateNow()
-			Worker.Tick()
 			seq++
 			if seq%60 == 0 {
 				Log.Info(Worker.Info())

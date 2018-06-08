@@ -59,7 +59,7 @@ var (
 	// filter
 	Filter gxfilter.Filter
 	//kafka info keeper
-	kafkaInfoKeeper *KafkaInfoKeep
+	kafkaInfoKeeper *KafkaInfoKeeper
 )
 
 func UpdateNow() {
