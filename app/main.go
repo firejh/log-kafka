@@ -132,7 +132,20 @@ func initHttpLog(logConf string) {
 	HTTPLog = gxlog.NewLoggerWithConfFile(logConf)
 }
 
+func initKafaInfo() {
+	var err error
+	kafkaInfoKeeper, err = NewKafkaInfoKeeper()
+	if err != nil {
+		panic(err)
+	}
+	err = kafkaInfoKeeper.Start()
+	if err != nil {
+		panic(err)
+	}
+}
+
 func initWorker() {
+
 	Worker = NewKafkaWorker()
 	Worker.Start(int64(Conf.Core.WorkerNum), int64(Conf.Core.QueueNum))
 }
@@ -191,7 +204,7 @@ func initSignal() {
 		seq int
 		// signal.Notify的ch信道是阻塞的(signal.Notify不会阻塞发送信号), 需要设置缓冲
 		signals = make(chan os.Signal, 1)
-		ticker  = time.NewTicker(KeepAliveTimeout)
+		ticker  = time.NewTicker(time.Second * 1)
 	)
 	// It is not possible to block SIGKILL or syscall.SIGSTOP
 	signal.Notify(signals, os.Interrupt, os.Kill, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
@@ -209,6 +222,7 @@ func initSignal() {
 				})
 
 				// 要么survialTimeout时间内执行完毕下面的逻辑然后程序退出，要么执行上面的超时函数程序强行退出
+				kafkaInfoKeeper.Stop()
 				Server.Stop()
 				KafkaLog.Close()
 				HTTPLog.Close()
@@ -221,6 +235,7 @@ func initSignal() {
 		// case <-time.After(time.Duration(1e9)):
 		case <-ticker.C:
 			UpdateNow()
+			Worker.Tick()
 			seq++
 			if seq%60 == 0 {
 				Log.Info(Worker.Info())
@@ -323,6 +338,7 @@ func main() {
 	initHTTPServer()
 
 	Server = NewUdpServer()
+	initKafaInfo()
 	initWorker()
 
 	if err = initRegistry(); err != nil {

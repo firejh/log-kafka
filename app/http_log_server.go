@@ -132,7 +132,8 @@ func appLogHandler(c *gin.Context) {
 	}
 	HTTPLog.Debug("bizType:%+v", bizType)
 
-	if !gxstrings.Contains(Conf.Kafka.HTTPTopics, bizType) {
+	//if !gxstrings.Contains(Conf.Kafka.HTTPTopics, bizType) {
+	if _, ok := KafkaInfo.HttpTopicMap[bizType]; !ok {
 		c.JSON(httpStatusIllegalParam, gin.H{
 			"status":  httpStatusIllegalParam,
 			"message": bizType + " not exist",

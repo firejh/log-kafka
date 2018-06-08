@@ -69,6 +69,9 @@ type SectionKafka struct {
 type SectionEtcd struct {
 	Addrs           []string `yaml:"addrs"`
 	ConnectTTL      int      `yaml:"connect_ttl"`
+	KafkaInfoKey	string	 `yaml:"kafka_info_key"`
+	HttpTopicKey	string   `yaml:"http_topic_key"`
+	UdpTopicKey		string   `yaml:"udp_topic_key"`
 	RegistryRoot    string   `yaml:"registry_root"`
 	ServiceGroup    string   `yaml:"service_group"`
 	ServiceName     string   `yaml:"service_name"`
