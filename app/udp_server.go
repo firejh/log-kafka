@@ -15,6 +15,7 @@ import (
 	"net"
 	"sync"
 	"time"
+	"strings"
 )
 
 import (
@@ -23,10 +24,11 @@ import (
 
 const (
 	ReadDeadline = 5e9
+	BizTYpeStartIndex = 12
 )
 
 var (
-	protocol = "udp"
+	protocol = "udp4"
 )
 
 type (
@@ -87,15 +89,36 @@ func (u *UdpServer) start() {
 		if nerr, ok = err.(net.Error); ok && nerr.Timeout() {
 			continue
 		}
-		if length == 0 || err != nil {
+		if err != nil {
 			StatStorage.AddUdpError(1)
 			Log.Warn("conn.ReadFromUDP() = {peer:%#v error:%#v}", peerAddr, err)
 			continue
 		}
+		if length < 12 {
+			StatStorage.AddUdpError(1)
+			Log.Warn("get err msg from %#v, lenth = %d", peerAddr, length)
+			continue
+		}
+		buf = buf[0:length]
 
-		//fmt.Printf("udp seq:%d\n", seq)
+		//topic固定json日志的12开始
+		topic := string(buf[BizTYpeStartIndex:])
+		index := strings.IndexAny(topic, "\"")
+		if index < 0 {
+			StatStorage.AddUdpError(1)
+			Log.Warn("get err msg from %#v, lenth = %d", peerAddr, length)
+			continue
+		}
+		topic = topic[:index]
+		if _, ok := KafkaInfo.UdpTopicMap[topic]; !ok {
+			StatStorage.AddUdpError(1)
+			Log.Warn("illegal topic from %#v, log content = %s", peerAddr, buf)
+			//fmt.Printf("illegal topic from %#v, log content = %s\n", peerAddr, buf)
+			continue
+		}
+
 		Worker.enqueueKafkaMessage(Message{
-			topic: Conf.Kafka.UDPTopic,
+			topic: topic,
 			key:   []byte(fmt.Sprintf("%d", seq)),
 			value: buf[:length],
 		})

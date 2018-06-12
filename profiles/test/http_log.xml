@@ -2,7 +2,7 @@
   <filter enabled="true">
     <tag>http_file</tag>
     <type>file</type>
-    <level>DEBUG</level>
+    <level>INFO</level>
     <property name="filename">logs/log_kafka_http.log</property>
     <property name="json">false</property> <!-- true enables json log format, its priority is high than format -->
     <property name="format">[%D %T] [%L] [%S] %M</property>

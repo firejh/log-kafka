@@ -58,6 +58,8 @@ var (
 	Register gxregistry.Registry
 	// filter
 	Filter gxfilter.Filter
+	//kafka info keeper
+	kafkaInfoKeeper *KafkaInfoKeeper
 )
 
 func UpdateNow() {

@@ -29,6 +29,9 @@ import (
 /////////////////////////////////////////////////
 // worker
 /////////////////////////////////////////////////
+var (
+	workerTickerDuration = 5 * time.Second
+)
 
 type (
 	Message struct {
@@ -64,17 +67,18 @@ func NewKafkaWorker() *KafkaWorker {
 func (w *KafkaWorker) Start(workerNum int64, queueNum int64) {
 	Log.Debug("worker number = %v, queue number is = %v", workerNum, queueNum)
 	w.Q = make(chan Message, queueNum)
+
+	KafkaInfo.workers = make(map[int64] bool)
+	for i := int64(0); i < workerNum; i++ {
+		KafkaInfo.workers[i] = true
+	}
 	for i := int64(0); i < workerNum; i++ {
 		w.wg.Add(1)
-		go w.startKafkaWorker()
+		go w.startKafkaWorker(i)
 	}
 }
 
-var (
-	workerIndex uint64
-)
-
-func (w *KafkaWorker) startKafkaWorker() {
+func (w *KafkaWorker) startKafkaWorker(workerIndex int64) {
 	var (
 		id              int
 		kafkaProducerID string
@@ -89,8 +93,7 @@ func (w *KafkaWorker) startKafkaWorker() {
 	)
 
 	id = gxruntime.GoID()
-	index = atomic.AddUint64(&workerIndex, 1)
-	Log.Info("worker{%d-%d} starts to work now.", index, id)
+	Log.Info("worker{%d-%d} starts to work now.", workerIndex, id)
 
 	msgCallback = func(message *sarama.ProducerMessage) {
 		var meta = message.Metadata.(MessageMetadata)
@@ -113,9 +116,11 @@ func (w *KafkaWorker) startKafkaWorker() {
 	}
 
 	kafkaProducerID = fmt.Sprintf("%s-%d-%s-%d", LocalIP, Conf.Core.UDPPort, "telemetry", id)
+	KafkaInfo.BrokersRWLock.RLock()
+
 	producer, err = gxkafka.NewAsyncProducer(
 		kafkaProducerID,
-		strings.Split(Conf.Kafka.Brokers, ","),
+		strings.Split(KafkaInfo.Brokers, ","),
 		gxkafka.HASH,
 		false,
 		45,
@@ -123,10 +128,13 @@ func (w *KafkaWorker) startKafkaWorker() {
 		msgCallback,
 		errCallback,
 	)
+	KafkaInfo.BrokersRWLock.RUnlock()
 	if err != nil {
-		panic(fmt.Sprintf("fail to gxkafka.NewProducer(id:%s, brokers:%s) = error:%v", id, Conf.Kafka.Brokers, err))
+		panic(fmt.Sprintf("fail to gxkafka.NewProducer(id:%s, brokers:%s) = error:%v", id, KafkaInfo.Brokers, err))
 	}
 	producer.Start()
+
+	t := time.NewTicker(workerTickerDuration)
 
 LOOP:
 	for {
@@ -138,14 +146,45 @@ LOOP:
 				KafkaLog.Info("dequeue{worker{%d-%d} , message{topic:%s, key:%q, value:%q}}}",
 					index, id, message.topic, gxstrings.String(message.key), gxstrings.String(message.value))
 			}
+			//fmt.Println("send msg to kafka, msg = ", gxstrings.String(message.value))
 			producer.SendBytes(message.topic, message.key, message.value,
 				MessageMetadata{EnqueuedAt: gxtime.Unix2Time(atomic.LoadInt64(&Now)), Key: gxstrings.String(message.key)})
 			StatStorage.AddTotalCount(1)
 
+		case <-t.C:
+			if KafkaInfo.workers[workerIndex] == false {
+				producer.Stop()
+				for {
+					//restart produce
+					KafkaInfo.BrokersRWLock.RLock()
+					producer, err = gxkafka.NewAsyncProducer(
+						kafkaProducerID,
+						strings.Split(KafkaInfo.Brokers, ","),
+						gxkafka.HASH,
+						false,
+						45,
+						sarama.CompressionSnappy,
+						msgCallback,
+						errCallback,
+					)
+					KafkaInfo.BrokersRWLock.RUnlock()
+					if err != nil {
+						Log.Error("fail to restart kafka, brokers:%s, err = %v, wait retry...", KafkaInfo.Brokers, err)
+						//fmt.Printf("fail to restart kafka, brokers:%s, err = %v, wait retry...\n", KafkaInfo.Brokers, err)
+						time.Sleep(time.Second * 1)
+						continue
+					}
+					producer.Start()
+					KafkaInfo.workers[workerIndex] = true
+					Log.Warn("kafka reconnect to %s， workerIndex = %d", KafkaInfo.Brokers, workerIndex)
+					break
+				}
+			}
+
 		case <-w.done:
 			producer.Stop()
 			w.wg.Done()
-			Log.Info("worker{%d-%d} exits now.", index, id)
+			Log.Info("worker{%d-%d} exits now.", workerIndex, id)
 			break LOOP
 		}
 	}

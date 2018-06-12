@@ -67,14 +67,18 @@ type SectionKafka struct {
 
 // SectionEtcd is sub section of etcd.
 type SectionEtcd struct {
-	Addrs           []string `yaml:"addrs"`
-	ConnectTTL      int      `yaml:"connect_ttl"`
-	RegistryRoot    string   `yaml:"registry_root"`
-	ServiceGroup    string   `yaml:"service_group"`
-	ServiceName     string   `yaml:"service_name"`
-	ServiceProtocol string   `yaml:"service_protocol"`
-	ServiceVersion  string   `yaml:"service_version"`
-	NodeID          string   `yaml:"node_id"`
+	Addrs           	[]string`yaml:"addrs"`
+	ConnectTTL      	int      `yaml:"connect_ttl"`
+	KafkaClusterPath	string	`yaml:"kafka_cluster"`
+	KafkaInfoKey		string	 `yaml:"kafka_info_key"`
+	HTTPTopicKey		string   `yaml:"http_topic_key"`
+	UDPTopicKey			string   `yaml:"udp_topic_key"`
+	RegistryRoot    	string   `yaml:"registry_root"`
+	ServiceGroup    	string   `yaml:"service_group"`
+	ServiceName     	string   `yaml:"service_name"`
+	ServiceProtocol 	string   `yaml:"service_protocol"`
+	ServiceVersion		string   `yaml:"service_version"`
+	NodeID          	string   `yaml:"node_id"`
 }
 
 // LoadConfYaml provide load yml config.
