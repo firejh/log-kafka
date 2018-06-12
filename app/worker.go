@@ -117,6 +117,7 @@ func (w *KafkaWorker) startKafkaWorker(workerIndex int64) {
 
 	kafkaProducerID = fmt.Sprintf("%s-%d-%s-%d", LocalIP, Conf.Core.UDPPort, "telemetry", id)
 	KafkaInfo.BrokersRWLock.RLock()
+
 	producer, err = gxkafka.NewAsyncProducer(
 		kafkaProducerID,
 		strings.Split(KafkaInfo.Brokers, ","),
@@ -129,11 +130,11 @@ func (w *KafkaWorker) startKafkaWorker(workerIndex int64) {
 	)
 	KafkaInfo.BrokersRWLock.RUnlock()
 	if err != nil {
-		panic(fmt.Sprintf("fail to gxkafka.NewProducer(id:%s, brokers:%s) = error:%v", id, Conf.Kafka.Brokers, err))
+		panic(fmt.Sprintf("fail to gxkafka.NewProducer(id:%s, brokers:%s) = error:%v", id, KafkaInfo.Brokers, err))
 	}
 	producer.Start()
 
-	t := time.NewTimer(workerTickerDuration)
+	t := time.NewTicker(workerTickerDuration)
 
 LOOP:
 	for {
@@ -145,6 +146,7 @@ LOOP:
 				KafkaLog.Info("dequeue{worker{%d-%d} , message{topic:%s, key:%q, value:%q}}}",
 					index, id, message.topic, gxstrings.String(message.key), gxstrings.String(message.value))
 			}
+			//fmt.Println("send msg to kafka, msg = ", gxstrings.String(message.value))
 			producer.SendBytes(message.topic, message.key, message.value,
 				MessageMetadata{EnqueuedAt: gxtime.Unix2Time(atomic.LoadInt64(&Now)), Key: gxstrings.String(message.key)})
 			StatStorage.AddTotalCount(1)
@@ -168,6 +170,7 @@ LOOP:
 					KafkaInfo.BrokersRWLock.RUnlock()
 					if err != nil {
 						Log.Error("fail to restart kafka, brokers:%s, err = %v, wait retry...", KafkaInfo.Brokers, err)
+						//fmt.Printf("fail to restart kafka, brokers:%s, err = %v, wait retry...\n", KafkaInfo.Brokers, err)
 						time.Sleep(time.Second * 1)
 						continue
 					}

@@ -1,6 +1,6 @@
 core:
   mode: "release"
-  worker_num: 256
+  worker_num: 10
   queue_num: 512
   fail_fast_timeout: 3 # 当程序收到signal时候，要保证在fail_fast_timeout(unit: second)时间段内退出
   local_ip: "192.168.103.236"
@@ -24,7 +24,7 @@ api:
 
 kafka:
   # 多个broker之间逗号分隔
-  brokers: "127.0.0.1:9092,127.0.0.1:9092"
+  brokers: "127.0.0.1:9092"
   udp_topic: "telemetry"
   http_topics:
     - http1
@@ -38,6 +38,7 @@ etcd:
   kafka_info_key: "/test/key"
   http_topic_key: "/test/http"
   udp_topic_key: "/test/udp"
+  kafka_cluster: "test"
   service_group: "bj"
   service_name: "test"
   service_protocol: "udp"

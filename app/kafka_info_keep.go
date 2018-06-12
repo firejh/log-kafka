@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 	"sync"
+	"strings"
+	"fmt"
 )
 
 import (
-	"github.com/coreos/etcd/client"
-	"strings"
-	"fmt"
+	"github.com/coreos/etcd/clientv3"
 )
 
 type (
@@ -27,10 +27,11 @@ type (
 	}
 
 	KafkaInfoKeeper struct {
-		cli		client.Client
+		cli		*clientv3.Client
 		st		bool
 		wg		sync.WaitGroup
-		done	chan empty
+		//w		clientv3.WatchChan
+		done    chan empty
 	}
 
 )
@@ -48,17 +49,14 @@ func NewKafkaInfoKeeper() (*KafkaInfoKeeper, error) {
 		server *KafkaInfoKeeper
 		err error
 	)
-
-	cfg := client.Config{
-		Endpoints:               Conf.Etcd.Addrs,
-		Transport:               client.DefaultTransport,
-		// set timeout per request to fail fast when the target endpoint is unavailable
-		HeaderTimeoutPerRequest: dialTimeout,
-	}
 	server = &KafkaInfoKeeper{
 		st: true,
-		done: make(chan empty),}
-	server.cli, err = client.New(cfg)
+		done: make(chan empty)}
+
+	server.cli, err = clientv3.New(clientv3.Config{
+		Endpoints:   Conf.Etcd.Addrs,
+		DialTimeout: dialTimeout,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -67,157 +65,138 @@ func NewKafkaInfoKeeper() (*KafkaInfoKeeper, error) {
 }
 
 func (c *KafkaInfoKeeper) Start() error{
-	kapi := client.NewKeysAPI(c.cli)
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	resp, err := kapi.Get(ctx, Conf.Etcd.KafkaInfoKey,nil)
+	resp, err := c.cli.Get(ctx, Conf.Etcd.KafkaInfoKey)
 	cancel()
-	Log.Info("get kafka info from etcd, info %s:%s", resp.Node.Key, resp.Node.Value)
 	if  err != nil {
 		 return err
 	}
-	KafkaInfo.Brokers = resp.Node.Value
+	if len(resp.Kvs) > 0 {
+		KafkaInfo.Brokers = string(resp.Kvs[0].Value)
+	}
 
 	//udp topic, http topic init
 	ctx, cancel = context.WithTimeout(context.Background(), requestTimeout)
-	resp, err = kapi.Get(ctx, Conf.Etcd.UDPTopicKey, nil)
+	resp, err = c.cli.Get(ctx, Conf.Etcd.UDPTopicKey)
 	cancel()
 	if err != nil {
 		return err
 	}
-	KafkaInfo.UdpTopics = resp.Node.Value
+	if len(resp.Kvs) > 0 {
+		KafkaInfo.UdpTopics = string(resp.Kvs[0].Value)
+	}
 	KafkaInfo.UdpTopicMap = make(map[string]bool)
-	UTopics := strings.Split(resp.Node.Value, ",")
+	UTopics := strings.Split(KafkaInfo.UdpTopics, ",")
 	for _, v := range UTopics {
 		KafkaInfo.UdpTopicMap[v] = true
 	}
+
 	ctx, cancel = context.WithTimeout(context.Background(), requestTimeout)
-	resp, err = kapi.Get(ctx, Conf.Etcd.HTTPTopicKey, nil)
+	resp, err = c.cli.Get(ctx, Conf.Etcd.HTTPTopicKey,)
 	cancel()
 	if err != nil {
 		return err
 	}
-	KafkaInfo.HttpTopics = resp.Node.Value
+	if len(resp.Kvs) > 0 {
+		KafkaInfo.HttpTopics = string(resp.Kvs[0].Value)
+	}
 	KafkaInfo.HttpTopicMap = make(map[string]bool)
-	HTopics := strings.Split(resp.Node.Value, ",")
+	HTopics := strings.Split(KafkaInfo.HttpTopics, ",")
 	for _, v := range HTopics {
 		KafkaInfo.HttpTopicMap[v] = true
 	}
 
 	//watch kafka info
 	c.wg.Add(1)
-	go c.watchBrokers()
-	//watch udp topics
-	c.wg.Add(1)
-	go c.watchUDPTopics()
-	//watch http topics
-	c.wg.Add(1)
-	go c.watchHTTPTopics()
+	go c.watchKafaPath()
 
 	return nil
 }
 
 func (c *KafkaInfoKeeper) Stop() {
-	close(c.done)
+	select {
+	case <- c.done:
+		return
+	default:
+		close(c.done)
+		c.cli.Close()
+	}
+
 	c.wg.Wait()
 }
 
-func (c *KafkaInfoKeeper) watchBrokers() {
-	kapi := client.NewKeysAPI(c.cli)
-	t := time.NewTicker(loopSleepTime)
-	for {
-		select {
-		case <-t.C:
-			resp, err := kapi.Get(context.Background(), Conf.Etcd.KafkaInfoKey,nil)
-			if err != nil {
-				Log.Error("get kafka info from etcd failed, error = %v", err)
-				continue
-			}
-			Log.Info("get kafka info from etcd, info %s:%s", resp.Node.Key, resp.Node.Value)
-			if KafkaInfo.Brokers == resp.Node.Value {
-				continue
-			}
+func (c *KafkaInfoKeeper) Closed() bool {
+	select {
+	case <- c.done:
+		return true
 
-			Log.Warn("etcd kafka info changed from %s to %s", KafkaInfo.Brokers, resp.Node.Value)
-			KafkaInfo.BrokersRWLock.Lock()
-			KafkaInfo.Brokers = resp.Node.Value
-			for k,_ := range KafkaInfo.workers {
-				KafkaInfo.workers[k] = false
-			}
-			KafkaInfo.BrokersRWLock.Unlock()
-			//fmt.Printf("etcd kafka info changed from %s to %s\n", KafkaInfo.Brokers, resp.Node.Value)
-
-		case <-c.done:
-			fmt.Println("stop#######")
-			Log.Warn("watchBrokers stop")
-			c.wg.Done()
-			break
-		}
+	default:
+		return false
 	}
 }
 
-func (c *KafkaInfoKeeper) watchUDPTopics() {
-	kapi := client.NewKeysAPI(c.cli)
-	t := time.NewTicker(loopSleepTime)
-	for {
-		select {
-		case <- t.C:
-			resp, err := kapi.Get(context.Background(), Conf.Etcd.UDPTopicKey, nil)
-			if err != nil {
-				Log.Error("get udp topic from etcd failed, error = %v", err)
-				continue
-			}
-			Log.Info("get udp topic %s", resp.Node.Value)
-			if (KafkaInfo.UdpTopics == resp.Node.Value) {
-				continue
-			}
-			Log.Warn("etcd udptopics changed from %s to %s", KafkaInfo.UdpTopics, resp.Node.Value)
-			//fmt.Printf("etcd udptopics changed from %s to %s", KafkaInfo.UdpTopics, resp.Node.Value)
-			KafkaInfo.UdpTopicsRWLock.Lock()
-			KafkaInfo.UdpTopics = resp.Node.Value
-			//拆分到map
-			KafkaInfo.UdpTopicMap = make(map[string]bool)
-			UTopics := strings.Split(resp.Node.Value, ",")
-			for _, v := range UTopics {
-				KafkaInfo.UdpTopicMap[v] = true
-			}
-			KafkaInfo.UdpTopicsRWLock.Unlock()
-
-		case <-c.done:
-			Log.Warn("watchUDPTopics stop")
-			c.wg.Done()
+func (c *KafkaInfoKeeper) watchKafaPath() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	rCh := c.cli.Watch(ctx, Conf.Etcd.KafkaClusterPath, clientv3.WithPrefix(), clientv3.WithPrevKV())
+	for wResp := range rCh {
+		if c.Closed() {
 			break
 		}
+		for _, ev := range wResp.Events {
+			switch ev.Type {
+			case clientv3.EventTypePut:
+				switch string(ev.Kv.Key) {
+				case Conf.Etcd.KafkaInfoKey:
+					c.updateKafkaInfo(string(ev.Kv.Value))
+				case Conf.Etcd.UDPTopicKey:
+					c.updateUDPTopic(string(ev.Kv.Value))
+				case Conf.Etcd.HTTPTopicKey:
+					c.updateHTTPTopic(string(ev.Kv.Value))
+				default:
+					Log.Warn("unexpected etcd key, watch path = %s, key = %s", Conf.Etcd.KafkaClusterPath,string(ev.Kv.Key) )
+				}
+			default:
+				Log.Warn("unexpected etcd watch type = %d",ev.Type )
+			}
+		}
 	}
+	Log.Warn("watchKafaPath congrouting stoped")
+	fmt.Println("watchKafaPath stop")
 }
 
-func (c *KafkaInfoKeeper) watchHTTPTopics() {
-	kapi := client.NewKeysAPI(c.cli)
-	t := time.NewTicker(loopSleepTime)
-	for {
-		select {
-		case <- t.C:
-			resp, err := kapi.Get(context.Background(), Conf.Etcd.HTTPTopicKey, nil)
-			if err != nil {
-				Log.Error("get http topic from etcd failed, error = %v", err)
-				continue
-			}
-			Log.Info("get http topic %s", resp.Node.Value)
-			if (KafkaInfo.HttpTopics == resp.Node.Value) {
-				continue
-			}
-			Log.Warn("etcd udptopics changed from %s to %s", KafkaInfo.HttpTopics, resp.Node.Value)
-			KafkaInfo.HttpTopicsRWLock.Lock()
-			KafkaInfo.HttpTopics = resp.Node.Value
-			HTopics := strings.Split(resp.Node.Value, ",")
-			for _, v := range HTopics {
-				KafkaInfo.HttpTopicMap[v] = true
-			}
-			KafkaInfo.HttpTopicsRWLock.Unlock()
-
-		case <-c.done:
-			Log.Warn("watchHTTPTopics stop")
-			c.wg.Done()
-			break
-		}
+func (c *KafkaInfoKeeper) updateKafkaInfo(value string) {
+	Log.Warn("etcd kafka info changed from %s to %s", KafkaInfo.Brokers, value)
+	fmt.Printf("etcd kafka info changed from %s to %s\n", KafkaInfo.Brokers, value)
+	KafkaInfo.BrokersRWLock.Lock()
+	KafkaInfo.Brokers = value
+	for k,_ := range KafkaInfo.workers {
+		KafkaInfo.workers[k] = false
 	}
+	KafkaInfo.BrokersRWLock.Unlock()
+}
+
+func (c *KafkaInfoKeeper) updateUDPTopic(value string) {
+	Log.Warn("etcd udptopics changed from %s to %s", KafkaInfo.UdpTopics, value)
+	fmt.Printf("etcd udptopics changed from %s to %s", KafkaInfo.UdpTopics, value)
+	KafkaInfo.UdpTopicsRWLock.Lock()
+	KafkaInfo.UdpTopics = value
+	//拆分到map
+	KafkaInfo.UdpTopicMap = make(map[string]bool)
+	UTopics := strings.Split(value, ",")
+	for _, v := range UTopics {
+		KafkaInfo.UdpTopicMap[v] = true
+	}
+	KafkaInfo.UdpTopicsRWLock.Unlock()
+}
+
+func (c *KafkaInfoKeeper) updateHTTPTopic(value string) {
+	Log.Warn("etcd udptopics changed from %s to %s", KafkaInfo.HttpTopics, value)
+	KafkaInfo.HttpTopicsRWLock.Lock()
+	KafkaInfo.HttpTopics = value
+	HTopics := strings.Split(value, ",")
+	for _, v := range HTopics {
+		KafkaInfo.HttpTopicMap[v] = true
+	}
+	KafkaInfo.HttpTopicsRWLock.Unlock()
 }

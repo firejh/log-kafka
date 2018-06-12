@@ -28,7 +28,7 @@ const (
 )
 
 var (
-	protocol = "udp"
+	protocol = "udp4"
 )
 
 type (
@@ -99,6 +99,7 @@ func (u *UdpServer) start() {
 			Log.Warn("get err msg from %#v, lenth = %d", peerAddr, length)
 			continue
 		}
+		buf = buf[0:length]
 
 		//topic固定json日志的12开始
 		topic := string(buf[BizTYpeStartIndex:])
@@ -112,10 +113,10 @@ func (u *UdpServer) start() {
 		if _, ok := KafkaInfo.UdpTopicMap[topic]; !ok {
 			StatStorage.AddUdpError(1)
 			Log.Warn("illegal topic from %#v, log content = %s", peerAddr, buf)
+			//fmt.Printf("illegal topic from %#v, log content = %s\n", peerAddr, buf)
 			continue
 		}
 
-		//fmt.Printf("udp seq:%d\n", seq)
 		Worker.enqueueKafkaMessage(Message{
 			topic: topic,
 			key:   []byte(fmt.Sprintf("%d", seq)),
