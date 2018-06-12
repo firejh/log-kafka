@@ -13,9 +13,9 @@ package main
 import (
 	"fmt"
 	"net"
+	"strings"
 	"sync"
 	"time"
-	"strings"
 )
 
 import (
@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	ReadDeadline = 5e9
+	ReadDeadline      = 5e9
 	BizTYpeStartIndex = 12
 )
 

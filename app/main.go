@@ -132,7 +132,7 @@ func initHttpLog(logConf string) {
 	HTTPLog = gxlog.NewLoggerWithConfFile(logConf)
 }
 
-func initKafaInfo() {
+func initKafkaInfo() {
 	var err error
 	kafkaInfoKeeper, err = NewKafkaInfoKeeper()
 	if err != nil {
@@ -145,7 +145,6 @@ func initKafaInfo() {
 }
 
 func initWorker() {
-
 	Worker = NewKafkaWorker()
 	Worker.Start(int64(Conf.Core.WorkerNum), int64(Conf.Core.QueueNum))
 }
@@ -337,7 +336,7 @@ func main() {
 	initHTTPServer()
 
 	Server = NewUdpServer()
-	initKafaInfo()
+	initKafkaInfo()
 	initWorker()
 
 	if err = initRegistry(); err != nil {

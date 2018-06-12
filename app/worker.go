@@ -68,7 +68,7 @@ func (w *KafkaWorker) Start(workerNum int64, queueNum int64) {
 	Log.Debug("worker number = %v, queue number is = %v", workerNum, queueNum)
 	w.Q = make(chan Message, queueNum)
 
-	KafkaInfo.workers = make(map[int64] bool)
+	KafkaInfo.workers = make(map[int64]bool)
 	for i := int64(0); i < workerNum; i++ {
 		KafkaInfo.workers[i] = true
 	}

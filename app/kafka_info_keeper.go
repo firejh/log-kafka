@@ -2,10 +2,9 @@ package main
 
 import (
 	"context"
-	"time"
-	"sync"
 	"strings"
-	"fmt"
+	"sync"
+	"time"
 )
 
 import (
@@ -13,44 +12,45 @@ import (
 )
 
 type (
-	EtcdKafaInfo struct {
-		Key					string
-		Brokers				string
-		BrokersRWLock		sync.RWMutex
-		UdpTopics			string
-		UdpTopicMap			map[string] bool
-		UdpTopicsRWLock		sync.RWMutex
-		HttpTopics			string
-		HttpTopicMap		map[string] bool
-		HttpTopicsRWLock	sync.RWMutex
-		workers				map[int64] bool	//运行中map的key初始化后不会变动，只有对应的value可能变化，不用加锁不需要原子操作
+	EtcdKafkaInfo struct {
+		Key              string
+		Brokers          string
+		BrokersRWLock    sync.RWMutex
+		UdpTopics        string
+		UdpTopicMap      map[string]bool
+		UdpTopicsRWLock  sync.RWMutex
+		HttpTopics       string
+		HttpTopicMap     map[string]bool
+		HttpTopicsRWLock sync.RWMutex
+		workers          map[int64]bool //运行中map的key初始化后不会变动，只有对应的value可能变化，不用加锁不需要原子操作
 	}
 
 	KafkaInfoKeeper struct {
-		client		*clientv3.Client
-		st			bool
-		wg			sync.WaitGroup
-		done    	chan empty
+		client *clientv3.Client
+		st     bool
+		wg     sync.WaitGroup
+		done   chan empty
 	}
-
 )
 
 var (
 	//etcd kafka info
-	KafkaInfo EtcdKafaInfo
+	KafkaInfo      EtcdKafkaInfo
 	dialTimeout    = 5 * time.Second
 	requestTimeout = 5 * time.Second
-	loopSleepTime = 5 * time.Second
+	loopSleepTime  = 5 * time.Second
 )
 
 func NewKafkaInfoKeeper() (*KafkaInfoKeeper, error) {
 	var (
 		server *KafkaInfoKeeper
-		err error
+		err    error
 	)
+
 	server = &KafkaInfoKeeper{
-		st: true,
-		done: make(chan empty)}
+		st:   true,
+		done: make(chan empty),
+	}
 
 	server.client, err = clientv3.New(clientv3.Config{
 		Endpoints:   Conf.Etcd.Addrs,
@@ -63,12 +63,12 @@ func NewKafkaInfoKeeper() (*KafkaInfoKeeper, error) {
 	return server, nil
 }
 
-func (c *KafkaInfoKeeper) Start() error{
+func (c *KafkaInfoKeeper) Start() error {
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	resp, err := c.client.Get(ctx, Conf.Etcd.KafkaInfoKey)
 	cancel()
-	if  err != nil {
-		 return err
+	if err != nil {
+		return err
 	}
 	if len(resp.Kvs) > 0 {
 		KafkaInfo.Brokers = string(resp.Kvs[0].Value)
@@ -91,7 +91,7 @@ func (c *KafkaInfoKeeper) Start() error{
 	}
 
 	ctx, cancel = context.WithTimeout(context.Background(), requestTimeout)
-	resp, err = c.client.Get(ctx, Conf.Etcd.HTTPTopicKey,)
+	resp, err = c.client.Get(ctx, Conf.Etcd.HTTPTopicKey)
 	cancel()
 	if err != nil {
 		return err
@@ -107,14 +107,14 @@ func (c *KafkaInfoKeeper) Start() error{
 
 	//watch kafka info
 	c.wg.Add(1)
-	go c.watchKafaPath()
+	go c.watchKafkaPath()
 
 	return nil
 }
 
 func (c *KafkaInfoKeeper) Stop() {
 	select {
-	case <- c.done:
+	case <-c.done:
 		return
 	default:
 		close(c.done)
@@ -126,7 +126,7 @@ func (c *KafkaInfoKeeper) Stop() {
 
 func (c *KafkaInfoKeeper) Closed() bool {
 	select {
-	case <- c.done:
+	case <-c.done:
 		return true
 
 	default:
@@ -134,10 +134,15 @@ func (c *KafkaInfoKeeper) Closed() bool {
 	}
 }
 
-func (c *KafkaInfoKeeper) watchKafaPath() {
+func (c *KafkaInfoKeeper) watchKafkaPath() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	rCh := c.client.Watch(ctx, Conf.Etcd.KafkaClusterPath, clientv3.WithPrefix(), clientv3.WithPrevKV())
+
+	watchPath := Conf.Etcd.KafkaClusterPath
+	if !strings.HasSuffix(watchPath, "/") {
+		watchPath += "/"
+	}
+	rCh := c.client.Watch(ctx, watchPath, clientv3.WithPrefix(), clientv3.WithPrevKV())
 	for wResp := range rCh {
 		if c.Closed() {
 			break
@@ -147,29 +152,27 @@ func (c *KafkaInfoKeeper) watchKafaPath() {
 			case clientv3.EventTypePut:
 				switch string(ev.Kv.Key) {
 				case Conf.Etcd.KafkaInfoKey:
-					c.updateKafkaInfo(string(ev.Kv.Value))
+					go c.updateKafkaInfo(string(ev.Kv.Value))
 				case Conf.Etcd.UDPTopicKey:
-					c.updateUDPTopic(string(ev.Kv.Value))
+					go c.updateUDPTopic(string(ev.Kv.Value))
 				case Conf.Etcd.HTTPTopicKey:
-					c.updateHTTPTopic(string(ev.Kv.Value))
+					go c.updateHTTPTopic(string(ev.Kv.Value))
 				default:
-					Log.Warn("unexpected etcd key, watch path = %s, key = %s", Conf.Etcd.KafkaClusterPath,string(ev.Kv.Key) )
+					Log.Warn("unexpected etcd key, watch path = %s, key = %s", Conf.Etcd.KafkaClusterPath, string(ev.Kv.Key))
 				}
 			default:
-				Log.Warn("unexpected etcd watch type = %d",ev.Type )
+				Log.Warn("unexpected etcd watch type = %d", ev.Type)
 			}
 		}
 	}
-	Log.Warn("watchKafaPath congrouting stoped")
-	fmt.Println("watchKafaPath stop")
+	Log.Warn("watchKafkaPath goroutine stopped")
 }
 
 func (c *KafkaInfoKeeper) updateKafkaInfo(value string) {
 	Log.Warn("etcd kafka info changed from %s to %s", KafkaInfo.Brokers, value)
-	fmt.Printf("etcd kafka info changed from %s to %s\n", KafkaInfo.Brokers, value)
 	KafkaInfo.BrokersRWLock.Lock()
 	KafkaInfo.Brokers = value
-	for k,_ := range KafkaInfo.workers {
+	for k := range KafkaInfo.workers {
 		KafkaInfo.workers[k] = false
 	}
 	KafkaInfo.BrokersRWLock.Unlock()
@@ -177,7 +180,6 @@ func (c *KafkaInfoKeeper) updateKafkaInfo(value string) {
 
 func (c *KafkaInfoKeeper) updateUDPTopic(value string) {
 	Log.Warn("etcd udptopics changed from %s to %s", KafkaInfo.UdpTopics, value)
-	fmt.Printf("etcd udptopics changed from %s to %s", KafkaInfo.UdpTopics, value)
 	KafkaInfo.UdpTopicsRWLock.Lock()
 	KafkaInfo.UdpTopics = value
 	//拆分到map
