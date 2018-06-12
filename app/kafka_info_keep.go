@@ -27,11 +27,10 @@ type (
 	}
 
 	KafkaInfoKeeper struct {
-		cli		*clientv3.Client
-		st		bool
-		wg		sync.WaitGroup
-		//w		clientv3.WatchChan
-		done    chan empty
+		client		*clientv3.Client
+		st			bool
+		wg			sync.WaitGroup
+		done    	chan empty
 	}
 
 )
@@ -53,7 +52,7 @@ func NewKafkaInfoKeeper() (*KafkaInfoKeeper, error) {
 		st: true,
 		done: make(chan empty)}
 
-	server.cli, err = clientv3.New(clientv3.Config{
+	server.client, err = clientv3.New(clientv3.Config{
 		Endpoints:   Conf.Etcd.Addrs,
 		DialTimeout: dialTimeout,
 	})
@@ -66,7 +65,7 @@ func NewKafkaInfoKeeper() (*KafkaInfoKeeper, error) {
 
 func (c *KafkaInfoKeeper) Start() error{
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	resp, err := c.cli.Get(ctx, Conf.Etcd.KafkaInfoKey)
+	resp, err := c.client.Get(ctx, Conf.Etcd.KafkaInfoKey)
 	cancel()
 	if  err != nil {
 		 return err
@@ -77,7 +76,7 @@ func (c *KafkaInfoKeeper) Start() error{
 
 	//udp topic, http topic init
 	ctx, cancel = context.WithTimeout(context.Background(), requestTimeout)
-	resp, err = c.cli.Get(ctx, Conf.Etcd.UDPTopicKey)
+	resp, err = c.client.Get(ctx, Conf.Etcd.UDPTopicKey)
 	cancel()
 	if err != nil {
 		return err
@@ -92,7 +91,7 @@ func (c *KafkaInfoKeeper) Start() error{
 	}
 
 	ctx, cancel = context.WithTimeout(context.Background(), requestTimeout)
-	resp, err = c.cli.Get(ctx, Conf.Etcd.HTTPTopicKey,)
+	resp, err = c.client.Get(ctx, Conf.Etcd.HTTPTopicKey,)
 	cancel()
 	if err != nil {
 		return err
@@ -119,7 +118,7 @@ func (c *KafkaInfoKeeper) Stop() {
 		return
 	default:
 		close(c.done)
-		c.cli.Close()
+		c.client.Close()
 	}
 
 	c.wg.Wait()
@@ -138,7 +137,7 @@ func (c *KafkaInfoKeeper) Closed() bool {
 func (c *KafkaInfoKeeper) watchKafaPath() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	rCh := c.cli.Watch(ctx, Conf.Etcd.KafkaClusterPath, clientv3.WithPrefix(), clientv3.WithPrevKV())
+	rCh := c.client.Watch(ctx, Conf.Etcd.KafkaClusterPath, clientv3.WithPrefix(), clientv3.WithPrevKV())
 	for wResp := range rCh {
 		if c.Closed() {
 			break
