@@ -18,9 +18,10 @@ import (
 )
 
 func main() {
-	url := "http://localhost:3000/api/app/logs"
+	//url := "https://applogs.17paipai.cn/app/logs"
+	url := "http://testapplogs.17paipai.cn/api/app/logs"
 
-	payload := strings.NewReader("------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"pplog-biztype\"\r\n\r\nhttp1\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"pplog-log\"\r\n\r\nhello8\nhello6\nhello7\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW--")
+	payload := strings.NewReader("------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"pplog-biztype\"\r\n\r\ntopic-c-ad-click\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"pplog-log\"\r\n\r\n1234567890hellopaipai12345678934567890hellopaipai\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW--")
 
 	req, _ := http.NewRequest("POST", url, payload)
 
