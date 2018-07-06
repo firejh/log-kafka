@@ -61,7 +61,6 @@ int main(int argc, char* argv[])
 
     std::cout << "my log formart: " << log_data->get_json_log() << std::endl;
 
-    return;
     while (1) {
         //如果需要去掉老字段需要clear_extra_common_field，如果不需要则不要clear_extra_common_field，新的会覆盖老字段的value
         log_data->clear_extra_common_field();

@@ -5,28 +5,38 @@
 
 OSNAME      := $(shell uname)
 
+CC			= gcc
+CFLAGS		= -O0 -ggdb3
 CX			= g++
 CXFLAGS	    = -O0 -g -ggdb3
+#CFLAGS		= -O3 -Werror -std=c++11
 
 TAR         = ar
 TARFLAGS    = crs
 
-INC_DIR		= ./inc -I./misc -I./common -I../../third/protobuf/include/ -I../../third/curl/include/ -I../../third -I/usr/local/protobuf/include/  -I./third #-I../import/opensource/include
+INC_DIR		= ./inc -I./misc -I./common -I../../third/protobuf/include/ -I../../third/curl/include/ -I../../third
 SRC_DIR		= ./src
 EXAM_DIR	= ./exam
 OBJ_DIR		= ./obj
 LIB_DIR     = ./lib
 BIN_DIR		= ./bin
 LIB_BIN     = liblogcollect.a
+# BIN			= simple example
 BIN			= example
 
 INC			= -I$(INC_DIR)
-LIB			= -lpthread -L$(LIB_DIR) -L./third/lib -L../import/opensource/lib -llogcollect 
+LIB			= -lpthread -L$(LIB_DIR) -llogcollect
 
+ifeq ($(OSNAME), Darwin)
+    LIB     += -L../../third/curl/mac_lib -lcurl
+endif
 ifeq ($(OSNAME), Linux)
 	LIB     += -L../../third/curl/linux_lib -lcurl
 endif
 
+ifeq ($(OSNAME), Darwin)
+    LIB     += -L../../third/protobuf/mac_lib -lprotobuf
+endif
 ifeq ($(OSNAME), Linux)
     LIB     += -Wl,-rpath,../../third/protobuf/linux_lib -L../../third/protobuf/linux_lib -lprotobuf
 endif
@@ -34,9 +44,12 @@ endif
 
 all: debug release
 
-debug release: dir $(addprefix $(LIB_DIR)/,$(LIB_BIN))
-#$(addprefix $(BIN_DIR)/,$(BIN))
+debug release: env dir $(addprefix $(LIB_DIR)/,$(LIB_BIN)) $(addprefix $(BIN_DIR)/,$(BIN))
 
+env:
+	@echo "\033[31m the compile dir should be github.com/AlexStocks/github/c-practice/log \033[0m"
+
+#@ do not outoupt this command - ingnore its error and continue to make
 dir:
 	@-mkdir -p $(OBJ_DIR)
 	@-mkdir -p $(LIB_DIR)
@@ -54,8 +67,8 @@ $(LIB_DIR)/liblogcollect.a:$(addprefix $(OBJ_DIR)/, log_collect_sdk.o log_data.o
 # $(BIN_DIR)/simple:$(addprefix $(OBJ_DIR)/, simple.o)
 #	$(CX) $(CXFLAGS) -o $@ $^ $(LIB)
 
-#$(BIN_DIR)/example:$(addprefix $(OBJ_DIR)/, example.o)
-#	$(CX) $(CXFLAGS) -o $@ $^ $(LIB)
+$(BIN_DIR)/example:$(addprefix $(OBJ_DIR)/, example.o)
+	$(CX) $(CXFLAGS) -o $@ $^ $(LIB)
 
 strip:
 	strip $(addprefix $(BIN_DIR)/,$(BIN))

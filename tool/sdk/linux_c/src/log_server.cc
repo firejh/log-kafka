@@ -141,7 +141,7 @@ int get_log_nodes(string local_ip, string log_server_host,
     // 此处会单独启动一个线程做DNS解析，每个curl handle都有一个DNS cache，默认超时时间为 60 s
     code = curl_easy_perform(curl);
     if (code != CURLE_OK) {
-        fprintf(stderr, "curl_easy_perform() failed: %s, url = %s\n", curl_easy_strerror(code), http_url.c_str());
+        // fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(code));
         ret_code = HTTPSendRequstFail;
         goto last;
     } else {
