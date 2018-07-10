@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -9,7 +10,6 @@ import (
 
 import (
 	"github.com/coreos/etcd/clientv3"
-	"fmt"
 )
 
 type (
