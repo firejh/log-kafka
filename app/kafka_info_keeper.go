@@ -9,6 +9,7 @@ import (
 
 import (
 	"github.com/coreos/etcd/clientv3"
+	"fmt"
 )
 
 type (
@@ -105,6 +106,8 @@ func (c *KafkaInfoKeeper) Start() error {
 		KafkaInfo.HttpTopicMap[v] = true
 	}
 
+	fmt.Printf("kafka_info : %v", KafkaInfo)
+
 	//watch kafka info
 	c.wg.Add(1)
 	go c.watchKafkaPath()
@@ -148,6 +151,9 @@ func (c *KafkaInfoKeeper) watchKafkaPath() {
 			break
 		}
 		for _, ev := range wResp.Events {
+			if len(ev.Kv.Value) == 0 {
+				continue
+			}
 			switch ev.Type {
 			case clientv3.EventTypePut:
 				switch string(ev.Kv.Key) {
