@@ -5,11 +5,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"fmt"
 )
 
 import (
 	"github.com/coreos/etcd/clientv3"
-	"fmt"
 )
 
 type (
