@@ -14,31 +14,30 @@ CXFLAGS	    = -O0 -g -ggdb3
 TAR         = ar
 TARFLAGS    = crs
 
-INC_DIR		= ./inc -I./misc -I./common -I../../third/protobuf/include/ -I../../third/curl/include/ -I../../third
+INC_DIR		= ./inc -I./misc -I./common -I./third/protobuf/include/ -I./third/curl/include/ -I./third
 SRC_DIR		= ./src
 EXAM_DIR	= ./exam
 OBJ_DIR		= ./obj
 LIB_DIR     = ./lib
 BIN_DIR		= ./bin
 LIB_BIN     = liblogcollect.a
-# BIN			= simple example
 BIN			= example
 
 INC			= -I$(INC_DIR)
 LIB			= -lpthread -L$(LIB_DIR) -llogcollect
 
 ifeq ($(OSNAME), Darwin)
-    LIB     += -L../../third/curl/mac_lib -lcurl
+    LIB     += -L./third/curl/mac_lib -lcurl
 endif
 ifeq ($(OSNAME), Linux)
-	LIB     += -L../../third/curl/linux_lib -lcurl
+	LIB     += -L./third/curl/linux_lib -lcurl
 endif
 
 ifeq ($(OSNAME), Darwin)
-    LIB     += -L../../third/protobuf/mac_lib -lprotobuf
+    LIB     += -L./third/protobuf/mac_lib -lprotobuf
 endif
 ifeq ($(OSNAME), Linux)
-    LIB     += -Wl,-rpath,../../third/protobuf/linux_lib -L../../third/protobuf/linux_lib -lprotobuf
+    LIB     += -Wl,-rpath,./third/protobuf/linux_lib -L./third/protobuf/linux_lib -lprotobuf
 endif
 
 
