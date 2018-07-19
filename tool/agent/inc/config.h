@@ -38,8 +38,8 @@ public:
     std::string get_log_sdk_name() {
         return log_sdk_name_;
     }
-    std::string get_log_sdk_type() {
-        return log_sdk_type_;
+    std::string get_log_biz_type() {
+        return log_biz_type_;
     }
     std::string get_log_sdk_version() {
         return log_sdk_version_;
@@ -58,10 +58,11 @@ private:
     int32_t log_max_size_;          //日志文件大小
 
     //logsdk
-    std::string log_sdk_host_;      //获取日志服务的http路径
-    std::string log_sdk_name_;      //logsdk传给哪个kafka集群
-    std::string log_sdk_type_;      //logsdk传给哪个topic
-    std::string log_sdk_version_;   //v0.1
+    std::string log_kafka_http_path_;  // 本地向某个 log kafka 获取所有的 log kafka 集合
+    std::string log_kafka_name_;       // log kafka 向 etcd 注册时所使用的service name
+
+    std::string log_biz_type_;         // logsdk传给哪个topic
+    std::string log_sdk_version_;      // v0.1
 
 };
 

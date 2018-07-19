@@ -24,7 +24,6 @@ void sig_handler(int sig)
         LOG(INFO) << "Received shutdown signal, scheduling shutdown...";
     }
     exit_flag = false;
-
 }
 
 void set_signal_handlers(void)
@@ -91,4 +90,5 @@ int main(int argc, char* argv[])
         return -1;
     }
 
+    return 0;
 }
