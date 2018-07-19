@@ -3,7 +3,7 @@
 
 #include <glog/logging.h>
 
-#include "iniparser/iniparser.h"
+#include "iniparser.h"
 #include "agent_server.h"
 #include "global.h"
 
@@ -22,7 +22,7 @@ void sig_handler(int sig)
         break;
     default:
         LOG(INFO) << "Received shutdown signal, scheduling shutdown...";
-    }   
+    }
     exit_flag = false;
 
 }
@@ -41,10 +41,10 @@ int main(int argc, char* argv[])
 {
     try {
         //argv
-        if (argc != 2 ) { 
+        if (argc != 2 ) {
             printf("illegal argc, please input config file");
-            return -1; 
-        }   
+            return -1;
+        }
 
         //signal
         signal(SIGHUP, SIG_IGN);
@@ -56,8 +56,8 @@ int main(int argc, char* argv[])
         dictionary* d = iniparser_load(config_file.c_str());
         if (NULL == d) {
             printf("open config %s failed", config_file.c_str());
-            return -1; 
-        }   
+            return -1;
+        }
         conf.load(config_file.c_str());
 
         //log

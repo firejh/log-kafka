@@ -14,58 +14,59 @@ CXFLAGS	    = -O0 -g -ggdb3
 TAR         = ar
 TARFLAGS    = crs
 
-INC_DIR		= ./inc -I./misc -I./common -I../../third/protobuf/include/ -I../../third/curl/include/ -I../../third
+# curl      google    iniparser jsoncpp   log_kafka
+INC_DIR		= ./inc
 SRC_DIR		= ./src
 EXAM_DIR	= ./exam
 OBJ_DIR		= ./obj
 LIB_DIR     = ./lib
 BIN_DIR		= ./bin
-LIB_BIN     = liblogcollect.a
-# BIN			= simple example
-BIN			= example
+LIB_BIN     = liblogcollect$(VERSION).a
+BIN			= log_kafka_gent
 
-INC			= -I$(INC_DIR)
-LIB			= -lpthread -L$(LIB_DIR) -llogcollect
+INC			= -I$(INC_DIR) \
+              -I./third/protobuf/include/google \
+              -I./third/glog/include/ \
+              -I./third/log_collect/include/ \
+              -I./third/iniparser/include/ \
+              -I./third/uds_datagram/inc
+
+LIB			= -lpthread \
+              ./third/protobuf/linux_lib/libprotobuf.a \
+              ./third/curl/linux_lib/libcurl.a \
+              ./third/glog/linux_lib/libglog.a \
+              ./third/iniparser/linux_lib/libiniparser.a \
+              ./third/jsoncpp/linux_lib/libjsoncpp.a \
+              ./third/uds_datagram/linux_lib/libuds1.0.0.a \
+              ./third/log_collect/linux_lib/liblogcollect.a
 
 ifeq ($(OSNAME), Darwin)
-    LIB     += -L../../third/curl/mac_lib -lcurl
+    LIB     += -L./third/curl/mac_lib -lcurl
 endif
 ifeq ($(OSNAME), Linux)
-	LIB     += -L../../third/curl/linux_lib -lcurl
+	LIB     += -L./third/curl/linux_lib -lcurl
 endif
 
 ifeq ($(OSNAME), Darwin)
-    LIB     += -L../../third/protobuf/mac_lib -lprotobuf
+    LIB     += -L./third/protobuf/mac_lib -lprotobuf
 endif
 ifeq ($(OSNAME), Linux)
-    LIB     += -Wl,-rpath,../../third/protobuf/linux_lib -L../../third/protobuf/linux_lib -lprotobuf
+    LIB     += -Wl,-rpath,./third/protobuf/linux_lib -L./third/protobuf/linux_lib -lprotobuf
 endif
 
 
-all: debug release
-#strip
-
-debug release: dir $(addprefix $(LIB_DIR)/,$(LIB_BIN)) $(addprefix $(BIN_DIR)/,$(BIN))
+all: dir $(addprefix $(BIN_DIR)/,$(BIN))
 
 #@ do not outoupt this command - ingnore its error and continue to make
 dir:
 	@-mkdir -p $(OBJ_DIR)
-	@-mkdir -p $(LIB_DIR)
+	# @-mkdir -p $(LIB_DIR)
 	@-mkdir -p $(BIN_DIR)
 
-$(OBJ_DIR)/%.o:$(SRC_DIR)/%.cc
+$(OBJ_DIR)/%.o:$(SRC_DIR)/%.cpp
 	$(CX) $(CXFLAGS) $(INC) -o $@ -c $<
 
-$(OBJ_DIR)/%.o:$(EXAM_DIR)/%.cc
-	$(CX) $(CXFLAGS) $(INC) -o $@ -c $<
-
-$(LIB_DIR)/liblogcollect.a:$(addprefix $(OBJ_DIR)/, log_collect_sdk.o log_data.o pbjson.o service.pb.o log_server.o)
-	$(TAR) $(TARFLAGS) $@ $^
-
-# $(BIN_DIR)/simple:$(addprefix $(OBJ_DIR)/, simple.o)
-#	$(CX) $(CXFLAGS) -o $@ $^ $(LIB)
-
-$(BIN_DIR)/example:$(addprefix $(OBJ_DIR)/, example.o)
+$(BIN_DIR)/$(BIN):$(addprefix $(OBJ_DIR)/, agent_server.o config.o main.o)
 	$(CX) $(CXFLAGS) -o $@ $^ $(LIB)
 
 strip:

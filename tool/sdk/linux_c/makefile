@@ -5,32 +5,37 @@
 
 OSNAME      := $(shell uname)
 
-CC			= gcc
-CFLAGS		= -O0 -ggdb3
-CX			= g++
-CXFLAGS	    = -O0 -g -ggdb3
-#CFLAGS		= -O3 -Werror -std=c++11
+CC          = gcc
+CFLAGS      = -O0 -ggdb3
+CX          = g++
+CXFLAGS     = -O0 -g -ggdb3
+#CFLAGS     = -O3 -Werror -std=c++11
 
 TAR         = ar
-TARFLAGS    = crs
+TARFLAGS    = crsuv
 
-INC_DIR		= ./inc -I./misc -I./common -I./third/protobuf/include/ -I./third/curl/include/ -I./third
-SRC_DIR		= ./src
-EXAM_DIR	= ./exam
-OBJ_DIR		= ./obj
+# SO_FLAGS    = -shared -fPIC
+SO_FLAGS    = -shared
+
+INC_DIR     = ./inc -I./misc -I./common -I./third/protobuf/include/ -I./third/curl/include/ -I./third
+SRC_DIR     = ./src
+EXAM_DIR    = ./exam
+OBJ_DIR     = ./obj
 LIB_DIR     = ./lib
-BIN_DIR		= ./bin
-LIB_BIN     = liblogcollect.a
-BIN			= example
+BIN_DIR     = ./bin
+VERSION     = 1.0.0
+LIB_BIN     = liblogcollect$(VERSION).a
+LIB_SO      = liblogcollect$(VERSION).so
+BIN         = example
 
-INC			= -I$(INC_DIR)
-LIB			= -lpthread -L$(LIB_DIR) -llogcollect
+INC         = -I$(INC_DIR)
+LIB         = -lpthread -L$(LIB_DIR) -llogcollect$(VERSION)
 
 ifeq ($(OSNAME), Darwin)
     LIB     += -L./third/curl/mac_lib -lcurl
 endif
 ifeq ($(OSNAME), Linux)
-	LIB     += -L./third/curl/linux_lib -lcurl
+    LIB     += -L./third/curl/linux_lib -lcurl
 endif
 
 ifeq ($(OSNAME), Darwin)
@@ -41,12 +46,7 @@ ifeq ($(OSNAME), Linux)
 endif
 
 
-all: debug release
-
-debug release: env dir $(addprefix $(LIB_DIR)/,$(LIB_BIN)) $(addprefix $(BIN_DIR)/,$(BIN))
-
-env:
-	@echo "\033[31m the compile dir should be github.com/AlexStocks/github/c-practice/log \033[0m"
+all: dir $(addprefix $(LIB_DIR)/,$(LIB_BIN) $(LIB_SO)) $(addprefix $(BIN_DIR)/,$(BIN))
 
 #@ do not outoupt this command - ingnore its error and continue to make
 dir:
@@ -60,11 +60,11 @@ $(OBJ_DIR)/%.o:$(SRC_DIR)/%.cc
 $(OBJ_DIR)/%.o:$(EXAM_DIR)/%.cc
 	$(CX) $(CXFLAGS) $(INC) -o $@ -c $<
 
-$(LIB_DIR)/liblogcollect.a:$(addprefix $(OBJ_DIR)/, log_collect_sdk.o log_data.o pbjson.o service.pb.o log_server.o)
+$(LIB_DIR)/$(LIB_BIN):$(addprefix $(OBJ_DIR)/, log_collect_sdk.o log_data.o pbjson.o service.pb.o log_server.o)
 	$(TAR) $(TARFLAGS) $@ $^
 
-# $(BIN_DIR)/simple:$(addprefix $(OBJ_DIR)/, simple.o)
-#	$(CX) $(CXFLAGS) -o $@ $^ $(LIB)
+$(LIB_DIR)/$(LIB_SO):$(addprefix $(OBJ_DIR)/, log_collect_sdk.o log_data.o pbjson.o service.pb.o log_server.o)
+	$(CX) $(CXFLAGS) $(SO_FLAGS) -o $@ $^
 
 $(BIN_DIR)/example:$(addprefix $(OBJ_DIR)/, example.o)
 	$(CX) $(CXFLAGS) -o $@ $^ $(LIB)
