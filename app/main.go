@@ -132,6 +132,10 @@ func initHttpLog(logConf string) {
 	HTTPLog = gxlog.NewLoggerWithConfFile(logConf)
 }
 
+func initUDPServer() {
+	Server = NewUdpServer()
+}
+
 func initKafkaInfo() {
 	var err error
 	kafkaInfoKeeper, err = NewKafkaInfoKeeper()
@@ -149,6 +153,10 @@ func initWorker() {
 	Worker.Start(int64(Conf.Core.WorkerNum), int64(Conf.Core.QueueNum))
 }
 
+func initMonitor() {
+	Monitor = NewLogMonitor()
+	Monitor.Start()
+}
 func initRegistry() error {
 	var (
 		err     error
@@ -334,10 +342,10 @@ func main() {
 	}
 
 	initHTTPServer()
-
-	Server = NewUdpServer()
+	initUDPServer()
 	initKafkaInfo()
 	initWorker()
+	initMonitor()
 
 	if err = initRegistry(); err != nil {
 		log.Fatal("initRegistry() = err:%+v", err)

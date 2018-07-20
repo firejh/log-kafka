@@ -60,6 +60,8 @@ var (
 	Filter gxfilter.Filter
 	//kafka info keeper
 	kafkaInfoKeeper *KafkaInfoKeeper
+	//monitor
+	Monitor *LogMonitor
 )
 
 func UpdateNow() {

@@ -13,6 +13,7 @@ core:
     enabled: false
     path: "logkafka.pid"
     override: true
+  server_int_id: 1
 
 api:
   stat_go_uri: "/api/stat/go"
