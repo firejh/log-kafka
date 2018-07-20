@@ -33,7 +33,7 @@ INC			= -I$(INC_DIR) \
               -I./third/uds_datagram/inc
 
 LIB			= -lpthread \
-              ./third/protobuf/linux_lib/libprotobuf.a \
+              ./third/protobuf/linux_lib/libprotobuf.so \
               ./third/curl/linux_lib/libcurl.a \
               ./third/glog/linux_lib/libglog.a \
               ./third/iniparser/linux_lib/libiniparser.a \
