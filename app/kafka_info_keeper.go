@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -13,7 +14,7 @@ import (
 )
 
 type (
-	EtcdKafkaInfo struct {
+	EtcdKafaInfo struct {
 		Key              string
 		Brokers          string
 		BrokersRWLock    sync.RWMutex
@@ -36,7 +37,7 @@ type (
 
 var (
 	//etcd kafka info
-	KafkaInfo      EtcdKafkaInfo
+	KafkaInfo      EtcdKafaInfo
 	dialTimeout    = 5 * time.Second
 	requestTimeout = 5 * time.Second
 	loopSleepTime  = 5 * time.Second
