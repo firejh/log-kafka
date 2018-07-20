@@ -9,7 +9,7 @@ AgentServer::AgentServer()
     usock_server_ = NULL;
     log_sdk_ = NULL;
     log_data_ = NULL;
-    log_common_data_.info_BIZ_type = "user_coloration_log_kafka_agent"; //对应的topic，写死一般不会变动，后期可以改为配置
+    log_common_data_.info_BIZ_type = "user_coloration_log_kafka_agent";
 }
 
 AgentServer::~AgentServer() {}
@@ -38,7 +38,7 @@ void AgentServer::open()
     create_LogData(&log_data_);
 
     log_collect::RET_NUM ret_log = log_sdk_->open(conf.get_local_ip(), conf.get_log_sdk_host(),
-        conf.get_log_sdk_name(), conf.get_log_sdk_version());
+        conf.get_log_service_name(), conf.get_log_sdk_version());
     if (ret_log != log_collect::RET_NUM_SUCCESS) {
         std::stringstream ss;
         ss << "log_sdk_->open, err, ret = " << ret_log;
