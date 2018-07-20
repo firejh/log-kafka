@@ -173,7 +173,7 @@ void LogCollectSDK::monitor_log_server(void)
             continue;
         }
 
-        {
+        do {
             //这里只有变化的时候会执行，可以忽略加锁的性能影响
             pthread_mutex_lock(&global_lock_);
             to_address_.clear();
@@ -181,7 +181,7 @@ void LogCollectSDK::monitor_log_server(void)
                 add_log_server(servers[i].address().c_str(), uint16_t(servers[i].port()));
             }
             pthread_mutex_unlock(&global_lock_);
-        }
+        } while(0);
 
         sleep(check_timeval_);
     }
@@ -248,7 +248,7 @@ void LogCollectSDK::send_log(void)
                         std::cout << "log_collet err, send data failed\n";
                     } else {
                         //std::cout << "send data to " << GetIPString(log_server.first) << ":" << ntohs(log_server.second) << std::endl;
-                    } 
+                    }
                 }catch (std::exception& ex) {
                     std::cout << "log_collet excepton : " << ex.what() << "\n";
                 }

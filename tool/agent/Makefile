@@ -8,13 +8,14 @@ OSNAME      := $(shell uname)
 CC			= gcc
 CFLAGS		= -O0 -ggdb3
 CX			= g++
-CXFLAGS	    = -O0 -g -ggdb3
+#CXFLAGS	    = -O0 -g -ggdb3
 #CFLAGS		= -O3 -Werror -std=c++11
+CFLAGS		= -O2 -Werror
 
 TAR         = ar
 TARFLAGS    = crs
 
-# curl      google    iniparser jsoncpp   log_kafka
+# curl      google    iniparser log_kafka
 INC_DIR		= ./inc
 SRC_DIR		= ./src
 EXAM_DIR	= ./exam
@@ -27,7 +28,7 @@ BIN			= log_kafka_gent
 INC			= -I$(INC_DIR) \
               -I./third/protobuf/include/google \
               -I./third/glog/include/ \
-              -I./third/log_collect/include/ \
+              -I./third/client_sdk/include/ \
               -I./third/iniparser/include/ \
               -I./third/uds_datagram/inc
 
@@ -36,9 +37,8 @@ LIB			= -lpthread \
               ./third/curl/linux_lib/libcurl.a \
               ./third/glog/linux_lib/libglog.a \
               ./third/iniparser/linux_lib/libiniparser.a \
-              ./third/jsoncpp/linux_lib/libjsoncpp.a \
               ./third/uds_datagram/linux_lib/libuds1.0.0.a \
-              ./third/log_collect/linux_lib/liblogcollect.a
+              ./third/client_sdk/linux_lib/libclient_sdk1.0.0.a
 
 ifeq ($(OSNAME), Darwin)
     LIB     += -L./third/curl/mac_lib -lcurl
