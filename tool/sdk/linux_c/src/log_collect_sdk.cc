@@ -102,6 +102,7 @@ bool create_LogCollectSDK(ILogCollectSDK** p_obj)
 
 LogCollectSDK::LogCollectSDK()
 {
+    running_ = false;
     send_sock_ = -1;
     check_timeval_ = 60;
     pthread_mutex_init(&global_lock_, NULL);
@@ -110,6 +111,7 @@ LogCollectSDK::LogCollectSDK()
 
 RET_NUM LogCollectSDK::open(string local_ip, string log_server_host, string service_name, string service_version)
 {
+    running_ = true;
     local_ip_ = local_ip;
     log_server_host_ = log_server_host;
     service_name_ = service_name;
@@ -135,7 +137,7 @@ void* LogCollectSDK::th_monitor_log_server(void* data)
 void LogCollectSDK::monitor_log_server(void)
 {
     std::vector<Node> servers;
-    while (1) {
+    while (running_) {
         servers.clear();
         LogNodesErrorCode ret = (LogNodesErrorCode)get_log_nodes(local_ip_, log_server_host_, service_name_, service_version_, servers);
         if (GetLogNodesSuccess != ret || servers.empty()) {
@@ -219,7 +221,7 @@ void* LogCollectSDK::th_send_log(void* data)
 void LogCollectSDK::send_log(void)
 {
     static uint32_t send_seq = 0;
-    while(1) {
+    while (running_) {
         std::vector<string*> temp;
         //lock
         pthread_mutex_lock(&queue_lock_);
@@ -278,4 +280,12 @@ void LogCollectSDK::set_check_timeval(uint32_t sec)
     check_timeval_ = sec;
 }
 
+void LogCollectSDK::close(void*)
+{
+    running_ = false;
+    pthread_join(monitor_thread_, NULL);
+    pthread_join(send_thread_, NULL);
 }
+
+}
+

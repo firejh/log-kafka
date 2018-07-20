@@ -33,7 +33,7 @@ INC			= -I$(INC_DIR) \
               -I./third/uds_datagram/inc
 
 LIB			= -lpthread \
-              ./third/protobuf/linux_lib/libprotobuf.so \
+              ./third/protobuf/linux_lib/libprotobuf.3.4.1.a \
               ./third/curl/linux_lib/libcurl.a \
               ./third/glog/linux_lib/libglog.a \
               ./third/iniparser/linux_lib/libiniparser.a \
@@ -48,10 +48,10 @@ ifeq ($(OSNAME), Linux)
 endif
 
 ifeq ($(OSNAME), Darwin)
-    LIB     += -L./third/protobuf/mac_lib -lprotobuf
+    LIB     += -L./third/protobuf/mac_lib
 endif
 ifeq ($(OSNAME), Linux)
-    LIB     += -Wl,-rpath,./third/protobuf/linux_lib -L./third/protobuf/linux_lib -lprotobuf
+    LIB     += -Wl,-rpath,./third/protobuf/linux_lib -L./third/protobuf/linux_lib
 endif
 
 

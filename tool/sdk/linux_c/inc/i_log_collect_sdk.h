@@ -31,6 +31,9 @@ public:
     //service_version, v0.1
     virtual RET_NUM open(string local_ip, string log_server_host, string service_name, string service_version) = 0;
 
+    //安全关闭
+    virtual void close(void*) = 0;
+
     //发送日志
     virtual RET_NUM log(ILogData* log_data) = 0;
 

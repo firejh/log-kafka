@@ -6,7 +6,7 @@
 
 #include <iostream>
 
-#include "log_server.h"
+//#include "log_server.h"
 #include "i_log_collect_sdk.h"
 
 int main(int argc, char* argv[])

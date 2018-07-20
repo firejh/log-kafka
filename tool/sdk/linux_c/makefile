@@ -10,15 +10,15 @@ CFLAGS      = -O0 -ggdb3
 CX          = g++
 #CXFLAGS     = -O0 -g -ggdb3
 #CFLAGS     = -O3 -Werror -std=c++11
-CFLAGS     = -O3 -Werror
+CXFLAGS     = -O3 -Werror
 
 TAR         = ar
 TARFLAGS    = crsuv
 
-# SO_FLAGS    = -shared -fPIC
+#SO_FLAGS    = -shared -fPIC
 SO_FLAGS    = -shared
 
-INC_DIR     = ./inc -I./misc -I./common -I./third/protobuf/include/ -I./third/curl/include/ -I./third
+INC_DIR     = ./inc -I./misc -I./common -I./third/protobuf/include/ -I./third/curl/include/ -I./third/glog/include -I./third
 SRC_DIR     = ./src
 EXAM_DIR    = ./exam
 OBJ_DIR     = ./obj
@@ -33,17 +33,17 @@ INC         = -I$(INC_DIR)
 LIB         = -lpthread -L$(LIB_DIR) -lclient_sdk$(VERSION)
 
 ifeq ($(OSNAME), Darwin)
-    LIB     += -L./third/curl/mac_lib -lcurl
+    LIB     += -L./third/curl/mac_lib -lcurl ./third/glog/mac_lib/libglog.a
 endif
 ifeq ($(OSNAME), Linux)
-    LIB     += -L./third/curl/linux_lib -lcurl
+    LIB     += -L./third/curl/linux_lib -lcurl ./third/glog/linux_lib/libglog.a ./third/protobuf/linux_lib/libprotobuf.3.4.1.a
 endif
 
 ifeq ($(OSNAME), Darwin)
     LIB     += -L./third/protobuf/mac_lib -lprotobuf
 endif
 ifeq ($(OSNAME), Linux)
-    LIB     += -Wl,-rpath,./third/protobuf/linux_lib -L./third/protobuf/linux_lib -lprotobuf
+    LIB     += -Wl,-rpath,./third/protobuf/linux_lib -L./third/protobuf/linux_lib
 endif
 
 
@@ -62,7 +62,8 @@ $(OBJ_DIR)/%.o:$(EXAM_DIR)/%.cc
 	$(CX) $(CXFLAGS) $(INC) -o $@ -c $<
 
 $(LIB_DIR)/$(LIB_BIN):$(addprefix $(OBJ_DIR)/, log_collect_sdk.o log_data.o pbjson.o service.pb.o log_server.o)
-	$(TAR) $(TARFLAGS) $@ $^
+	# $(TAR) $(TARFLAGS) $@ $^
+	$(TAR) $(TARFLAGS) $@ ./third/protobuf/linux_lib/libprotobuf.3.4.1.a $^
 
 $(LIB_DIR)/$(LIB_SO):$(addprefix $(OBJ_DIR)/, log_collect_sdk.o log_data.o pbjson.o service.pb.o log_server.o)
 	$(CX) $(CXFLAGS) $(SO_FLAGS) -o $@ $^
