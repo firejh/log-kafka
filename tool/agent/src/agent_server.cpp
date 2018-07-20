@@ -37,8 +37,8 @@ void AgentServer::open()
     }
     create_LogData(&log_data_);
 
-    log_collect::RET_NUM ret_log = log_sdk_->open(conf.get_local_ip(), conf.get_log_sdk_host(),
-        conf.get_log_service_name(), conf.get_log_sdk_version());
+    log_collect::RET_NUM ret_log = log_sdk_->open(conf.get_local_ip(), conf.get_log_kafka_host(),
+        conf.get_log_service_name(), conf.get_log_service_version());
     if (ret_log != log_collect::RET_NUM_SUCCESS) {
         std::stringstream ss;
         ss << "log_sdk_->open, err, ret = " << ret_log;
@@ -70,7 +70,7 @@ void AgentServer::onRecv(const char * peer_sock_file, char* buf, int buf_len)
     //...
 
     //common key
-    log_common_data_.info_BIZ_type = conf.get_log_sdk_type();
+    log_common_data_.info_BIZ_type = conf.get_log_biz_type();
     log_common_data_.server_type = data->server_type;
     log_common_data_.group_id = data->group_id;
     log_common_data_.server_id = data->server_id;
@@ -81,7 +81,7 @@ void AgentServer::onRecv(const char * peer_sock_file, char* buf, int buf_len)
     log_data_->set_common_field(&log_common_data_);
     size_t log_len = (strlen(data->log_data) > LOG_DATA_LEN) ? LOG_DATA_LEN : strlen(data->log_data);
     log_data_->clear_extra_common_field();
-    log_data_->add_extra_common_field("log_data", data->log_data, log_len);
+    log_data_->add_extra_common_field((char*)"log_data", std::string(data->log_data, log_len).data());
     LOG(INFO) << "send data " << log_data_->get_json_log();
     RET_NUM ret = log_sdk_->log(log_data_);
     if (RET_NUM_SUCCESS != ret) {
