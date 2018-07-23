@@ -220,6 +220,7 @@ void* LogCollectSDK::th_send_log(void* data)
 
 void LogCollectSDK::send_log(void)
 {
+    std::cout << "LogCollectSDK send thread start...\n";
     static uint32_t send_seq = 0;
     while (running_) {
         std::vector<string*> temp;
@@ -260,6 +261,7 @@ void LogCollectSDK::send_log(void)
             //lock end
         }
     }
+    std::cout << "LogCollectSDK send thread stop \n";
 
     return;
 }

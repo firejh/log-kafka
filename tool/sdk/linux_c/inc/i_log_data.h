@@ -44,7 +44,7 @@ public:
     //清空私有字段，如果私有字段变化需要先清空，后重新add_extra_common_field
     virtual void clear_extra_common_field() = 0;
 
-    //添加私有字段
+    //添加私有字段，char*数据必须是严格cstring，即'\0'结尾，否则会出现不可预料bug
     virtual bool add_extra_common_field(const char* key, const char* value) = 0;
     virtual bool add_extra_common_field(const char* key, const uint64_t value) = 0;
 

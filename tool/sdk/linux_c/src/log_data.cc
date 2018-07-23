@@ -139,6 +139,14 @@ std::string LogData::get_json_log()
         writer.String(common_data_.session_id.c_str());
     }
 
+    for (std::map<std::string, std::string>::iterator it = extra_common_data_.begin(); it != extra_common_data_.end(); ++it) {
+        if (it->first.empty() || it->second.empty()) {
+            continue;
+        }
+        writer.Key(it->first.c_str());
+        writer.String(it->second.c_str());
+    }
+
     writer.EndObject();
 
     return s.GetString();
